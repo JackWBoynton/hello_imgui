@@ -707,6 +707,31 @@ std::vector<HelloImGui::DockingSplit> CreateAlternativeDockingSplits()
     return splits;
 }
 
+std::vector<HelloImGui::DockingSplit> CreateNestedDockingSplits() {
+    HelloImGui::DockingSplit splitMainTop;
+    splitMainTop.initialDock = "NestedDockSpace";
+    splitMainTop.newDock = "NestedDockSpaceTop";
+    splitMainTop.direction = ImGuiDir_Up;
+    splitMainTop.ratio = 0.5f;
+
+    return {splitMainTop};
+}
+
+std::vector<HelloImGui::DockableWindow> CreateNestedDockableWindows(AppState& appState) {
+
+    HelloImGui::DockableWindow nestedWindow1;
+    nestedWindow1.label = "Nested Window 1";
+    nestedWindow1.dockSpaceName = "NestedDockSpaceTop";
+    nestedWindow1.GuiFunction = [] { ImGui::Text("This is the first nested window"); };
+    
+    HelloImGui::DockableWindow nestedWindow2;
+    nestedWindow2.label = "Nested Window 2";
+    nestedWindow2.dockSpaceName = "NestedDockSpace";
+    nestedWindow2.GuiFunction = [] { ImGui::Text("This is the second nested window"); };
+
+    return {nestedWindow1, nestedWindow2};
+}
+
 //
 // 2. Define the Dockable windows
 //
@@ -746,12 +771,22 @@ std::vector<HelloImGui::DockableWindow> CreateDockableWindows(AppState& appState
     alternativeThemeWindow.dockSpaceName = "CommandSpace2";
     alternativeThemeWindow.GuiFunction = [&appState]() { GuiWindowAlternativeTheme(appState); };
 
+    HelloImGui::DockableWindow nestedDockspaceWindow;
+    nestedDockspaceWindow.label = "NestedDockSpace";
+    nestedDockspaceWindow.dockSpaceName = "MainDockSpace";
+    nestedDockspaceWindow.GuiFunction = [] { ImGui::Text("This is the nested dockspace window"); };
+    nestedDockspaceWindow.dockingParams = HelloImGui::DockingParams();
+    nestedDockspaceWindow.dockingParams.dockingSplits = CreateNestedDockingSplits();
+    nestedDockspaceWindow.dockingParams.dockableWindows = CreateNestedDockableWindows(appState);
+    nestedDockspaceWindow.dockingParams.mainDockSpaceNodeFlags = ImGuiDockNodeFlags_None;
+
     std::vector<HelloImGui::DockableWindow> dockableWindows {
         featuresDemoWindow,
         layoutCustomizationWindow,
         logsWindow,
         dearImGuiDemoWindow,
-        alternativeThemeWindow
+        alternativeThemeWindow,
+        nestedDockspaceWindow
     };
     return dockableWindows;
 }
@@ -911,7 +946,7 @@ int main(int, char**)
 
     // uncomment the next line if you want to always start with the layout defined in the code
     //     (otherwise, modifications to the layout applied by the user layout will be remembered)
-    // runnerParams.dockingParams.layoutCondition = HelloImGui::DockingLayoutCondition::ApplicationStart;
+    runnerParams.dockingParams.layoutCondition = HelloImGui::DockingLayoutCondition::ApplicationStart;
 
     //###############################################################################################
     // Part 3: Where to save the app settings
@@ -929,7 +964,7 @@ int main(int, char**)
     //     Note: AppUserConfigFolder is:
     //         AppData under Windows (Example: C:\Users\[Username]\AppData\Roaming)
     //         ~/.config under Linux
-    //         "~/Library/Application Support" under macOS or iOS
+            // "~/Library/Application Support" under macOS or iOS
     runnerParams.iniFolderType = HelloImGui::IniFolderType::AppUserConfigFolder;
 
     // runnerParams.iniFilename: this will be the name of the ini file in which the settings

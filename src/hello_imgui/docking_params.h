@@ -201,7 +201,80 @@ struct DockingSplit
 };
 // @@md
 
+enum class DockingLayoutCondition
+{
+    FirstUseEver,
+    ApplicationStart,
+    Never
+};
 
+struct DockableWindow;
+
+// @@md#DockingParams
+
+// DockingParams contains all the settings concerning the docking:
+//     - list of splits
+//     - list of dockable windows
+struct DockingParams
+{
+    // --------------- Main params -----------------------------
+
+    // `dockingSplits`: _vector[DockingSplit]_.
+    //  Defines the way docking splits should be applied on the screen
+    //  in order to create new Dock Spaces
+    std::vector<DockingSplit>   dockingSplits;
+
+    // `dockableWindows`: _vector[DockableWindow]_.
+    //  List of the dockable windows, together with their Gui code
+    std::vector<DockableWindow> dockableWindows;
+
+    // `layoutName`: _string, default="default"_.
+    //  Displayed name of the layout.
+    //  Only used in advanced cases, when several layouts are available.
+    std::string layoutName = "Default";
+
+
+    // --------------- Options -----------------------------
+
+    // `mainDockSpaceNodeFlags`: _ImGuiDockNodeFlags (enum),
+    //      default=ImGuiDockNodeFlags_PassthruCentralNode_
+    //  Flags to apply to the main dock space
+    //  (enable/disable resizing, splitting, tab bar, etc.).
+    //  Most flags are inherited by children dock spaces.
+    //  You can also set flags for specific dock spaces via `DockingSplit.nodeFlags`
+    ImGuiDockNodeFlags mainDockSpaceNodeFlags = ImGuiDockNodeFlags_PassthruCentralNode;
+
+
+    // --------------- Layout handling -----------------------------
+
+    // `layoutCondition`: _enum DockingLayoutCondition, default=FirstUseEver_.
+    //  When to apply the docking layout. Choose between
+    //      FirstUseEver (apply once, then keep user preference),
+    //      ApplicationStart (always reapply at application start)
+    //      Never
+    DockingLayoutCondition layoutCondition = DockingLayoutCondition::FirstUseEver;
+
+    // `layoutReset`: _bool, default=false_.
+    //  Reset layout on next frame, i.e. drop the layout customizations which were
+    //  applied manually by the user. layoutReset will be reset to false after this.
+    bool layoutReset = false;
+
+
+    // --------------- Helper Methods -----------------------------
+
+    // `DockableWindow * dockableWindowOfName(const std::string & name)`:
+    // returns a pointer to a dockable window
+    DockableWindow * dockableWindowOfName(const std::string& name);
+
+    // `bool focusDockableWindow(const std::string& name)`:
+    // will focus a dockable window (and make its tab visible if needed)
+    bool focusDockableWindow(const std::string& windowName);
+
+    // `optional<ImGuiID> dockSpaceIdFromName(const std::string& dockSpaceName)`:
+    // returns the ImGuiID corresponding to the dockspace with this name
+    std::optional<ImGuiID> dockSpaceIdFromName(const std::string& dockSpaceName);
+};
+// @@md
 
 // @@md#DockableWindow
 
@@ -277,6 +350,8 @@ struct DockableWindow
     //  When to apply the window position.
     ImGuiCond  windowPositionCondition = ImGuiCond_FirstUseEver;
 
+    DockingParams dockingParams = {};
+
 
     // --------------- Constructor ------------------------------
     // Constructor
@@ -294,80 +369,6 @@ struct DockableWindow
 };
 // @@md
 
-
-enum class DockingLayoutCondition
-{
-    FirstUseEver,
-    ApplicationStart,
-    Never
-};
-
-
-// @@md#DockingParams
-
-// DockingParams contains all the settings concerning the docking:
-//     - list of splits
-//     - list of dockable windows
-struct DockingParams
-{
-    // --------------- Main params -----------------------------
-
-    // `dockingSplits`: _vector[DockingSplit]_.
-    //  Defines the way docking splits should be applied on the screen
-    //  in order to create new Dock Spaces
-    std::vector<DockingSplit>   dockingSplits;
-
-    // `dockableWindows`: _vector[DockableWindow]_.
-    //  List of the dockable windows, together with their Gui code
-    std::vector<DockableWindow> dockableWindows;
-
-    // `layoutName`: _string, default="default"_.
-    //  Displayed name of the layout.
-    //  Only used in advanced cases, when several layouts are available.
-    std::string layoutName = "Default";
-
-
-    // --------------- Options -----------------------------
-
-    // `mainDockSpaceNodeFlags`: _ImGuiDockNodeFlags (enum),
-    //      default=ImGuiDockNodeFlags_PassthruCentralNode_
-    //  Flags to apply to the main dock space
-    //  (enable/disable resizing, splitting, tab bar, etc.).
-    //  Most flags are inherited by children dock spaces.
-    //  You can also set flags for specific dock spaces via `DockingSplit.nodeFlags`
-    ImGuiDockNodeFlags mainDockSpaceNodeFlags = ImGuiDockNodeFlags_PassthruCentralNode;
-
-
-    // --------------- Layout handling -----------------------------
-
-    // `layoutCondition`: _enum DockingLayoutCondition, default=FirstUseEver_.
-    //  When to apply the docking layout. Choose between
-    //      FirstUseEver (apply once, then keep user preference),
-    //      ApplicationStart (always reapply at application start)
-    //      Never
-    DockingLayoutCondition layoutCondition = DockingLayoutCondition::FirstUseEver;
-
-    // `layoutReset`: _bool, default=false_.
-    //  Reset layout on next frame, i.e. drop the layout customizations which were
-    //  applied manually by the user. layoutReset will be reset to false after this.
-    bool layoutReset = false;
-
-
-    // --------------- Helper Methods -----------------------------
-
-    // `DockableWindow * dockableWindowOfName(const std::string & name)`:
-    // returns a pointer to a dockable window
-    DockableWindow * dockableWindowOfName(const std::string& name);
-
-    // `bool focusDockableWindow(const std::string& name)`:
-    // will focus a dockable window (and make its tab visible if needed)
-    bool focusDockableWindow(const std::string& windowName);
-
-    // `optional<ImGuiID> dockSpaceIdFromName(const std::string& dockSpaceName)`:
-    // returns the ImGuiID corresponding to the dockspace with this name
-    std::optional<ImGuiID> dockSpaceIdFromName(const std::string& dockSpaceName);
-};
-// @@md
 
 } // namespace HelloImGui
 

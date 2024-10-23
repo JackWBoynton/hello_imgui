@@ -214,6 +214,34 @@ void MenuView_Layouts(RunnerParams& runnerParams)
     ImGui::PopID();
 }
 
+static void RenderDockableWindowViews(std::vector<DockableWindow>& dockableWindows) {
+    for (auto& dockableWindow: dockableWindows)
+    {
+        if (!dockableWindow.includeInViewMenu)
+            continue;
+        
+        if (!dockableWindow.dockingParams.dockableWindows.empty() && !ImGui::IsKeyDown(ImGuiKey_ModShift) && dockableWindow.isVisible) {
+
+            if (ImGui::BeginMenu(dockableWindow.label.c_str()))
+            {
+                RenderDockableWindowViews(dockableWindow.dockingParams.dockableWindows);
+                ImGui::EndMenu();
+            }
+
+        } else {
+            if (dockableWindow.canBeClosed)
+            {
+                if (ImGui::MenuItem(dockableWindow.label.c_str(), nullptr, dockableWindow.isVisible))
+                    dockableWindow.isVisible = ! dockableWindow.isVisible;
+            }
+            else
+            {
+                ImGui::MenuItem(dockableWindow.label.c_str(), nullptr, dockableWindow.isVisible, false);
+            }
+        }
+    }
+}
+
 void MenuView_DockableWindows(RunnerParams& runnerParams)
 {
     auto & dockableWindows = runnerParams.dockingParams.dockableWindows;
@@ -234,22 +262,7 @@ void MenuView_DockableWindows(RunnerParams& runnerParams)
             if (dockableWindow.canBeClosed && dockableWindow.includeInViewMenu)
                 dockableWindow.isVisible = false;
 
-    {
-        for (auto& dockableWindow: runnerParams.dockingParams.dockableWindows)
-        {
-            if (!dockableWindow.includeInViewMenu)
-                continue;
-            if (dockableWindow.canBeClosed)
-            {
-                if (ImGui::MenuItem(dockableWindow.label.c_str(), nullptr, dockableWindow.isVisible))
-                    dockableWindow.isVisible = ! dockableWindow.isVisible;
-            }
-            else
-            {
-                ImGui::MenuItem(dockableWindow.label.c_str(), nullptr, dockableWindow.isVisible, false);
-            }
-        }
-    }
+    RenderDockableWindowViews(dockableWindows);
 
     ImGui::PopID();
 }
@@ -287,6 +300,39 @@ void ShowViewMenu(RunnerParams & runnerParams)
     }
 }
 
+void ImplProviderNestedDockspace(const DockableWindow& dockableWindow)
+{
+    ImGuiID dockSpaceId = ImGui::GetID(dockableWindow.label.c_str());
+    SplitIdsHelper::SetSplitId(dockableWindow.label, dockSpaceId);
+    ImGui::DockSpace(dockSpaceId, dockableWindow.windowSize, dockableWindow.dockingParams.mainDockSpaceNodeFlags);
+}
+
+static void PropagateLayoutReset(DockingParams& dockingParams, bool layoutReset)
+{
+    dockingParams.layoutReset = layoutReset;
+    for (auto &dockableWindow : dockingParams.dockableWindows)
+        PropagateLayoutReset(dockableWindow.dockingParams, layoutReset);
+}
+
+void ApplyDockLayout(DockingParams& dockingParams, const char* dockSpaceName)
+{
+    bool isFirstFrame = ImGui::GetFrameCount() <= 1;
+    if (isFirstFrame)
+        return;
+    
+    PropagateLayoutReset(dockingParams, dockingParams.layoutReset);
+
+    if (dockingParams.layoutReset)
+    {
+        ImGuiID dockspaceId = ImGui::GetID(dockSpaceName);
+        ImGui::DockBuilderRemoveNodeChildNodes(dockspaceId);
+        //if (!IsMainDockSpaceAlreadySplit(mainDockspaceId))
+            ApplyDockingSplits(dockingParams.dockingSplits);
+        ApplyWindowDockingLocations(dockingParams.dockableWindows);
+        dockingParams.layoutReset = false;
+    }
+}
+
 void ShowDockableWindows(std::vector<DockableWindow>& dockableWindows)
 {
     bool wereAllDockableWindowsInited = (ImGui::GetFrameCount() > 1);
@@ -315,6 +361,11 @@ void ShowDockableWindows(std::vector<DockableWindow>& dockableWindows)
                     not_collapsed = ImGui::Begin(dockableWindow.label.c_str(), nullptr, dockableWindow.imGuiWindowFlags);
                 if (not_collapsed && dockableWindow.GuiFunction)
                     dockableWindow.GuiFunction();
+                if (!dockableWindow.dockingParams.dockableWindows.empty()) {
+                    ImplProviderNestedDockspace(dockableWindow);
+                    ApplyDockLayout(dockableWindow.dockingParams, dockableWindow.label.c_str());
+                    ShowDockableWindows(dockableWindow.dockingParams.dockableWindows);
+                }
                 ImGui::End();
 
                 if (shallFocusWindow)
@@ -598,21 +649,7 @@ bool IsMainDockSpaceAlreadySplit(ImGuiID mainDockspaceId)
     return result;
 }
 
-void ApplyDockLayout(DockingParams& dockingParams)
-{
-    bool isFirstFrame = ImGui::GetFrameCount() <= 1;
-    if (isFirstFrame)
-        return;
-    if (dockingParams.layoutReset)
-    {
-        ImGuiID mainDockspaceId = ImGui::GetID("MainDockSpace");
-        ImGui::DockBuilderRemoveNodeChildNodes(mainDockspaceId);
-        //if (!IsMainDockSpaceAlreadySplit(mainDockspaceId))
-            ApplyDockingSplits(dockingParams.dockingSplits);
-        ApplyWindowDockingLocations(dockingParams.dockableWindows);
-        dockingParams.layoutReset = false;
-    }
-}
+
 
 void ProvideWindowOrDock(RunnerParams& runnerParams)
 {
@@ -622,7 +659,7 @@ void ProvideWindowOrDock(RunnerParams& runnerParams)
     if (runnerParams.imGuiWindowParams.defaultImGuiWindowType == DefaultImGuiWindowType::ProvideFullScreenDockSpace)
     {
         ImplProvideFullScreenDockSpace(runnerParams);
-        ApplyDockLayout(runnerParams.dockingParams);
+        ApplyDockLayout(runnerParams.dockingParams, "MainDockSpace");
     }
 }
 
