@@ -342,24 +342,49 @@ namespace HelloImGui
             return true;
         }
 
-
-        void SaveDockableWindowsVisibility(const std::string& iniPartsFilename, const DockingParams& dockingParams)
+        static void SaveDockableWindowsVisibilityRec(ini::IniFile& iniFile, const std::vector<DockableWindow>& dockableWindows)
         {
-            std::string iniPartName = "Layout_" + details::SanitizeIniNameOrCategory(dockingParams.layoutName);
-
-            ini::IniFile iniFile;
-            for (const auto& dockableWindow: dockingParams.dockableWindows)
+            for (const auto& dockableWindow: dockableWindows)
             {
                 if (dockableWindow.rememberIsVisible)
                 {
                     std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow.label);
                     iniFile["Visibility"][iniValueName] = dockableWindow.isVisible;
                 }
+                if (!dockableWindow.dockingParams.dockableWindows.empty())
+                    SaveDockableWindowsVisibilityRec(iniFile, dockableWindow.dockingParams.dockableWindows);
             }
+        }
+
+        void SaveDockableWindowsVisibility(const std::string& iniPartsFilename, const DockingParams& dockingParams)
+        {
+            std::string iniPartName = "Layout_" + details::SanitizeIniNameOrCategory(dockingParams.layoutName);
+
+            ini::IniFile iniFile;
+            SaveDockableWindowsVisibilityRec(iniFile, dockingParams.dockableWindows);
 
             IniParts iniParts = IniParts::LoadFromFile(iniPartsFilename);
             iniParts.SetIniPart(iniPartName, iniFile.encode());
             iniParts.WriteToFile(iniPartsFilename);
+        }
+
+        void LoadDockableWindowsVisibilityRec(ini::IniFile& iniFile, std::vector<DockableWindow>& dockableWindows)
+        {
+            for (auto& dockableWindow: dockableWindows)
+            {
+                if (dockableWindow.rememberIsVisible)
+                {
+                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow.label);
+                    std::string boolString = iniFile["Visibility"][iniValueName].as<std::string>();
+
+                    if (boolString == "true")
+                        dockableWindow.isVisible = true;
+                    if (boolString == "false")
+                        dockableWindow.isVisible = false;
+                }
+                if (!dockableWindow.dockingParams.dockableWindows.empty())
+                    LoadDockableWindowsVisibilityRec(iniFile, dockableWindow.dockingParams.dockableWindows);
+            }
         }
 
         void LoadDockableWindowsVisibility(const std::string& iniPartsFilename, DockingParams* inOutDockingParams)
@@ -372,19 +397,7 @@ namespace HelloImGui
 
             ini::IniFile iniFile;
             iniFile.decode(iniParts.GetIniPart(iniPartName));
-            for (auto& dockableWindow: inOutDockingParams->dockableWindows)
-            {
-                if (dockableWindow.rememberIsVisible)
-                {
-                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow.label);
-                    std::string boolString = iniFile["Visibility"][iniValueName].as<std::string>();
-
-                    if (boolString == "true")
-                        dockableWindow.isVisible = true;
-                    if (boolString == "false")
-                        dockableWindow.isVisible = false;
-                }
-            }
+            LoadDockableWindowsVisibilityRec(iniFile, inOutDockingParams->dockableWindows);
         }
 
         void LoadSplitIds(const std::string& iniPartsFilename)

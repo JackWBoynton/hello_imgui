@@ -946,7 +946,7 @@ int main(int, char**)
 
     // uncomment the next line if you want to always start with the layout defined in the code
     //     (otherwise, modifications to the layout applied by the user layout will be remembered)
-    runnerParams.dockingParams.layoutCondition = HelloImGui::DockingLayoutCondition::ApplicationStart;
+    runnerParams.dockingParams.layoutCondition = HelloImGui::DockingLayoutCondition::FirstUseEver;
 
     //###############################################################################################
     // Part 3: Where to save the app settings
@@ -979,7 +979,7 @@ int main(int, char**)
     //###############################################################################################
     // Part 4: Run the app
     //###############################################################################################
-    HelloImGui::DeleteIniSettings(runnerParams);
+    // HelloImGui::DeleteIniSettings(runnerParams);
 
     // Optional: choose the backend combination
     // ----------------------------------------
