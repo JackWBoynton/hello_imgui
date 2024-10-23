@@ -350,6 +350,8 @@ struct DockableWindow
     //  When to apply the window position.
     ImGuiCond  windowPositionCondition = ImGuiCond_FirstUseEver;
 
+    // `dockingParams`: _DockingParams_.
+    // DockableWindows can also be dockspaces themselves.
     DockingParams dockingParams = {};
 
 

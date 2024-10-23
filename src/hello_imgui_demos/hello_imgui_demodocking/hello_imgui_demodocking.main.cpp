@@ -775,7 +775,6 @@ std::vector<HelloImGui::DockableWindow> CreateDockableWindows(AppState& appState
     nestedDockspaceWindow.label = "NestedDockSpace";
     nestedDockspaceWindow.dockSpaceName = "MainDockSpace";
     nestedDockspaceWindow.GuiFunction = [] { ImGui::Text("This is the nested dockspace window"); };
-    nestedDockspaceWindow.dockingParams = HelloImGui::DockingParams();
     nestedDockspaceWindow.dockingParams.dockingSplits = CreateNestedDockingSplits();
     nestedDockspaceWindow.dockingParams.dockableWindows = CreateNestedDockableWindows(appState);
     nestedDockspaceWindow.dockingParams.mainDockSpaceNodeFlags = ImGuiDockNodeFlags_None;
