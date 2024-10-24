@@ -771,10 +771,36 @@ std::vector<HelloImGui::DockableWindow> CreateDockableWindows(AppState& appState
     alternativeThemeWindow.dockSpaceName = "CommandSpace2";
     alternativeThemeWindow.GuiFunction = [&appState]() { GuiWindowAlternativeTheme(appState); };
 
+    // Add another window that acts as a dockspace
     HelloImGui::DockableWindow nestedDockspaceWindow;
     nestedDockspaceWindow.label = "NestedDockSpace";
     nestedDockspaceWindow.dockSpaceName = "MainDockSpace";
-    nestedDockspaceWindow.GuiFunction = [] { ImGui::Text("This is the nested dockspace window"); };
+    nestedDockspaceWindow.GuiFunction = [] { 
+        ImGui::Text("This is the nested dockspace window");
+        static bool hasDockableWindow = false;
+        if (!hasDockableWindow && ImGui::Button("Add dockable window")) {
+            hasDockableWindow = true;
+            HelloImGui::DockableWindow newDockableWindow;
+            newDockableWindow.label = "New Dockable Window";
+            newDockableWindow.dockSpaceName = "NestedDockSpace asdf";
+            newDockableWindow.GuiFunction = [] { ImGui::Text("This is a new dockable window"); };
+            HelloImGui::AddDockableWindow(newDockableWindow);
+        }
+
+        if (!hasDockableWindow && ImGui::Button("Add window (invalid dockspace)")) {
+            hasDockableWindow = true;
+            HelloImGui::DockableWindow newDockableWindow;
+            newDockableWindow.label = "New Dockable Window";
+            newDockableWindow.dockSpaceName = "asdf";
+            newDockableWindow.GuiFunction = [] { ImGui::Text("This is a new (invalid dockspace) dockable window"); };
+            HelloImGui::AddDockableWindow(newDockableWindow);
+        }
+
+        if (hasDockableWindow && ImGui::Button("Remove dockable window")) {
+            HelloImGui::RemoveDockableWindow("New Dockable Window");
+            hasDockableWindow = false;
+        }
+    };
     nestedDockspaceWindow.dockingParams.dockingSplits = CreateNestedDockingSplits();
     nestedDockspaceWindow.dockingParams.dockableWindows = CreateNestedDockableWindows(appState);
     nestedDockspaceWindow.dockingParams.mainDockSpaceNodeFlags = ImGuiDockNodeFlags_None;

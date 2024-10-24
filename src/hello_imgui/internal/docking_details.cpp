@@ -773,6 +773,26 @@ namespace AddDockableWindowHelper
         }
     }
 
+    static bool InsertDockableWindow(const DockableWindow& dockableWindow, std::vector<DockableWindow>& dockableWindows)
+    {
+        // find the correct place to insert the dockable window, searching through the recursive dockable windows to find the correct dockspace
+        for (auto & dockableWindowInList: dockableWindows)
+        {
+            if (dockableWindowInList.label == dockableWindow.dockSpaceName)
+            {
+                dockableWindows.push_back(dockableWindow);
+                return true;
+            }
+            else
+            {
+                if (InsertDockableWindow(dockableWindow, dockableWindowInList.dockingParams.dockableWindows))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     void Callback_2_PreNewFrame()
     {
         // Add the dockable windows that have been added as dummy to ImGui to HelloImGui
@@ -780,7 +800,13 @@ namespace AddDockableWindowHelper
         {
             if (dockableWindow.state == DockableWindowAdditionState::AddedAsDummyToImGui)
             {
-                HelloImGui::GetRunnerParams()->dockingParams.dockableWindows.push_back(dockableWindow.dockableWindow);
+                if (!InsertDockableWindow(dockableWindow.dockableWindow, HelloImGui::GetRunnerParams()->dockingParams.dockableWindows))
+                {
+                    fprintf(stderr, "DockableWindow %s: dockSpaceName %s not found\n", dockableWindow.dockableWindow.label.c_str(), dockableWindow.dockableWindow.dockSpaceName.c_str());
+                    // Add to the base
+                    HelloImGui::GetRunnerParams()->dockingParams.dockableWindows.push_back(dockableWindow.dockableWindow);
+                }
+                // Regardless just move on to the next state
                 dockableWindow.state = DockableWindowAdditionState::AddedToHelloImGui;
             }
         }
