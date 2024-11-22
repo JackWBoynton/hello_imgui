@@ -4,6 +4,7 @@
 #include "hello_imgui/runner_params.h"
 #include "hello_imgui/imgui_window_params.h"
 #include <functional>
+#include <memory>
 
 namespace HelloImGui
 {
@@ -16,7 +17,7 @@ void ConfigureImGuiDocking(const ImGuiWindowParams& imGuiWindowParams);
 void ProvideWindowOrDock(RunnerParams& runnerParams);
 void CloseWindowOrDock(ImGuiWindowParams& imGuiWindowParams);
 void ShowViewMenu(RunnerParams & runnerParams);
-void ShowDockableWindows(std::vector<DockableWindow>& dockableWindows);
+void ShowDockableWindows(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows);
 }  // namespace DockingDetails
 
 }  // namespace HelloImGui

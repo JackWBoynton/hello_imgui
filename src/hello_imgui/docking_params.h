@@ -226,7 +226,7 @@ struct DockingParams
 
     // `dockableWindows`: _vector[DockableWindow]_.
     //  List of the dockable windows, together with their Gui code
-    std::vector<DockableWindow> dockableWindows;
+    std::vector<std::shared_ptr<DockableWindow>> dockableWindows;
 
     // `layoutName`: _string, default="default"_.
     //  Displayed name of the layout.
@@ -264,7 +264,7 @@ struct DockingParams
 
     // `DockableWindow * dockableWindowOfName(const std::string & name)`:
     // returns a pointer to a dockable window
-    DockableWindow * dockableWindowOfName(const std::string& name);
+    std::shared_ptr<DockableWindow> dockableWindowOfName(const std::string& name);
 
     // `bool focusDockableWindow(const std::string& name)`:
     // will focus a dockable window (and make its tab visible if needed)

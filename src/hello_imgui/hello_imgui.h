@@ -216,11 +216,11 @@ std::string    CurrentLayoutName();
 // `AddDockableWindow()`: will add a dockable window to the current layout.
 // Will dock the window to the dockspace it belongs to if forceDockspace is true,
 // otherwise will dock it to the last space it was docked to (using saved settings)
-void AddDockableWindow(const DockableWindow& dockableWindow, bool forceDockspace = false);
+void AddDockableWindow(std::shared_ptr<DockableWindow> dockableWindow, bool forceDockspace = false);
 
 // `RemoveDockableWindow()`: will remove a dockable window from the current layout.
 // (dockableWindowName is the label of the window, as provided in the DockableWindow struct)
-void RemoveDockableWindow(const std::string& dockableWindowName);
+void RemoveDockableWindow(const std::string& dockableWindowDockspaceName, const std::string& dockableWindowName);
 
 // @@md
 

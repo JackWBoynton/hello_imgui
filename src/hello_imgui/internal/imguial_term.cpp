@@ -32,6 +32,9 @@ void ImGuiAl::Fifo::read(void* const data, size_t const count) {
     }
 
     uint8_t const* const src = static_cast<uint8_t const*>(_buffer) + _first;
+    if (src == nullptr) {
+        return;
+    }
     memcpy(data, src, first_batch);
     memcpy(static_cast<uint8_t*>(data) + first_batch, _buffer, second_batch);
 
@@ -64,6 +67,9 @@ void ImGuiAl::Fifo::write(void const* const data, size_t const count) {
     }
 
     uint8_t* const dest = static_cast<uint8_t*>(_buffer) + _last;
+    if (dest == nullptr) {
+        return;
+    }
     memcpy(dest, data, first_batch);
     memcpy(_buffer, static_cast<uint8_t const*>(data) + first_batch, second_batch);
 
