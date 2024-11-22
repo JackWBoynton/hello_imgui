@@ -6,6 +6,7 @@
 #include <vector>
 #include <utility>
 #include <optional>
+#include <memory>
 #include <stdio.h>
 
 namespace HelloImGui
