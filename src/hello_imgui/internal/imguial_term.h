@@ -47,7 +47,6 @@ class Fifo {
     void write(void const* const data, size_t const count);
     void skip(size_t const count);
 
-   protected:
     void* _buffer;
     size_t const _size;
     size_t _available;

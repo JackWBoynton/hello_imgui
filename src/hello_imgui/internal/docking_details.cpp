@@ -24,7 +24,9 @@ namespace SplitIdsHelper
 
     bool ContainsSplit(const DockSpaceName& dockSpaceName)
     {
-        return gImGuiSplitIDs.find(dockSpaceName) != gImGuiSplitIDs.end();
+        bool found = gImGuiSplitIDs.find(dockSpaceName) != gImGuiSplitIDs.end();
+        // remove the ###.. part of the name
+        return found;
     }
 
     ImGuiID GetSplitId(const DockSpaceName& dockSpaceName)
@@ -92,7 +94,7 @@ void MenuTheme()
         ImGui::Separator();
         for (int i = 0; i < ImGuiTheme::ImGuiTheme_Count; ++i)
         {
-            ImGuiTheme::ImGuiTheme_ theme = (ImGuiTheme::ImGuiTheme_)(i);
+        ImGuiTheme::ImGuiTheme_ theme = (ImGuiTheme::ImGuiTheme_)(i);
             bool selected = (theme == tweakedTheme.Theme);
             if (ImGui::MenuItem(ImGuiTheme::ImGuiTheme_Name(theme), nullptr, selected))
             {
@@ -121,6 +123,7 @@ void DoSplit(const DockingSplit & dockingSplit)
     IM_ASSERT(SplitIdsHelper::ContainsSplit(dockingSplit.initialDock) && "DoSplit: initialDock not found in gImGuiSplitIDs");
 
     ImGuiID initialDock_imguiId = SplitIdsHelper::GetSplitId(dockingSplit.initialDock);
+    ImGui::DockBuilderSetNodeSize(initialDock_imguiId, ImGui::GetWindowSize());
     ImGuiID newDock_imguiId
         = ImGui::DockBuilderSplitNode(
             initialDock_imguiId,
@@ -143,15 +146,26 @@ void ApplyDockingSplits(const std::vector<DockingSplit>& dockingSplits)
         DoSplit(dockingSplit);
 }
 
+bool ApplyWindowDockingLocation(const std::shared_ptr<DockableWindow> & dockableWindow)
+{
+    if (!SplitIdsHelper::ContainsSplit(dockableWindow->dockSpaceName))
+    {
+        // This dockspace has not been created yet
+        return false;
+    }
+    ImGui::DockBuilderDockWindow(
+        dockableWindow->label.c_str(),
+        SplitIdsHelper::GetSplitId(dockableWindow->dockSpaceName)
+    );
+    return true;
+}
+
 void ApplyWindowDockingLocations(
     const std::vector<std::shared_ptr<DockableWindow>> & dockableWindows)
 {
     for (const auto & dockableWindow: dockableWindows)
     {
-        ImGui::DockBuilderDockWindow(
-            dockableWindow->label.c_str(),
-            SplitIdsHelper::GetSplitId(dockableWindow->dockSpaceName)
-        );
+        ApplyWindowDockingLocation(dockableWindow);
     }
 }
 
@@ -363,6 +377,13 @@ void ShowDockableWindows(std::vector<std::shared_ptr<DockableWindow>>& dockableW
                     dockableWindow->GuiFunction();
                 if (!dockableWindow->dockingParams.dockingSplits.empty()) {
                     ImplProviderNestedDockspace(dockableWindow);
+                    // dockableWindow->dockingParams.layoutReset = true;
+                    static std::map<std::string, bool> firstFrameMap;
+                    if (firstFrameMap.find(dockableWindow->label) == firstFrameMap.end())
+                    {
+                        firstFrameMap[dockableWindow->label] = true;
+                        dockableWindow->dockingParams.layoutReset = true;
+                    }
                     ApplyDockLayout(dockableWindow->dockingParams, dockableWindow->label.c_str());
                 }
                 if (!dockableWindow->dockingParams.dockableWindows.empty())
@@ -676,6 +697,16 @@ static std::shared_ptr<DockableWindow> GetDockableWindowRec(const std::string &l
 {
     for (auto & dockableWindow: dockableWindows)
     {
+        std::string::size_type pos = label.find("###");
+        if (pos != std::string::npos)
+            if (dockableWindow->label == label.substr(0, pos))
+                return dockableWindow;
+
+        pos = dockableWindow->label.find("###");
+        if (pos != std::string::npos)
+            if (dockableWindow->label.substr(0, pos) == label)
+                return dockableWindow;
+
         if (dockableWindow->label == label)
             return dockableWindow;
         std::shared_ptr<DockableWindow> dockableWindowRec = GetDockableWindowRec(label, dockableWindow->dockingParams.dockableWindows);
@@ -727,7 +758,8 @@ namespace AddDockableWindowHelper
     {
         Waiting,
         AddedAsDummyToImGui,
-        AddedToHelloImGui
+        AddedToHelloImGui,
+        Docked
     };
 
     struct DockableWindowWaitingForAddition
@@ -795,11 +827,13 @@ namespace AddDockableWindowHelper
             if (dockableWindowInList->label == dockableWindow->dockSpaceName)
             {
                 dockableWindowInList->dockingParams.dockableWindows.push_back(dockableWindow);
+                // DockingDetails::ApplyWindowDockingLocation(dockableWindow);
                 return true;
             }
             else
             {
                 if (InsertDockableWindow(dockableWindow, dockableWindowInList->dockingParams.dockableWindows))
+                    // DockingDetails::ApplyWindowDockingLocation(dockableWindow);
                     return true;
             }
         }
@@ -855,12 +889,18 @@ namespace AddDockableWindowHelper
             {
                 if (!InsertDockableWindow(dockableWindow.dockableWindow, HelloImGui::GetRunnerParams()->dockingParams.dockableWindows))
                 {
-                    fprintf(stderr, "DockableWindow CB2 %s: dockSpaceName %s not found\n", dockableWindow.dockableWindow->label.c_str(), dockableWindow.dockableWindow->dockSpaceName.c_str());
                     // Add to the base
                     HelloImGui::GetRunnerParams()->dockingParams.dockableWindows.push_back(dockableWindow.dockableWindow);
-                }
-                // Regardless just move on to the next state
+
+                } 
                 dockableWindow.state = DockableWindowAdditionState::AddedToHelloImGui;
+            }
+
+            if (dockableWindow.state == DockableWindowAdditionState::AddedToHelloImGui)
+            {
+                // Regardless just move on to the next state
+                if (dockableWindow.dockableWindow->dockSpaceName.empty() || dockableWindow.dockableWindow->dockSpaceName == "MainDockSpace" || DockingDetails::ApplyWindowDockingLocation(dockableWindow.dockableWindow))
+                    dockableWindow.state = DockableWindowAdditionState::Docked;
             }
         }
 
@@ -870,7 +910,7 @@ namespace AddDockableWindowHelper
                 gDockableWindowsToAdd.begin(),
                 gDockableWindowsToAdd.end(),
                 [](const DockableWindowWaitingForAddition& dockableWindow) {
-                    return dockableWindow.state == DockableWindowAdditionState::AddedToHelloImGui;
+                    return dockableWindow.state == DockableWindowAdditionState::Docked;
                 }
             ),
             gDockableWindowsToAdd.end()

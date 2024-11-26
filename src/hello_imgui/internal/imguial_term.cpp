@@ -32,7 +32,7 @@ void ImGuiAl::Fifo::read(void* const data, size_t const count) {
     }
 
     uint8_t const* const src = static_cast<uint8_t const*>(_buffer) + _first;
-    if (src == nullptr) {
+    if (src == nullptr || data == nullptr || _buffer == nullptr) {
         return;
     }
     memcpy(data, src, first_batch);
@@ -122,6 +122,10 @@ void ImGuiAl::Crt::vprintf(char const* const format, va_list args) {
     }
 
     va_end(args_copy);
+
+    if (_fifo._buffer == nullptr) {
+        return;
+    }
 
     while (length + sizeof(Info) > _fifo.available()) {
         Info header;
