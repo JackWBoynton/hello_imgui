@@ -949,9 +949,9 @@ void AddDockableWindow(std::shared_ptr<DockableWindow> dockableWindow, bool forc
     AddDockableWindowHelper::AddDockableWindow(dockableWindow, forceDockspace);
 }
 
-void RemoveDockableWindow(const std::string& dockableWindowDockspaceName, const std::string& dockableWindowName)
+void RemoveDockableWindow(std::string dockableWindowDockspaceName, std::string dockableWindowName)
 {
-    AddDockableWindowHelper::gDockableWindowsToRemove.push_back({dockableWindowDockspaceName, dockableWindowName});
+    AddDockableWindowHelper::gDockableWindowsToRemove.emplace_back(dockableWindowDockspaceName, dockableWindowName);
 }
 
 

@@ -220,7 +220,7 @@ void AddDockableWindow(std::shared_ptr<DockableWindow> dockableWindow, bool forc
 
 // `RemoveDockableWindow()`: will remove a dockable window from the current layout.
 // (dockableWindowName is the label of the window, as provided in the DockableWindow struct)
-void RemoveDockableWindow(const std::string& dockableWindowDockspaceName, const std::string& dockableWindowName);
+void RemoveDockableWindow(std::string dockableWindowDockspaceName, std::string dockableWindowName);
 
 // @@md
 
