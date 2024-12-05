@@ -342,7 +342,7 @@ namespace HelloImGui
             return true;
         }
 
-        static void SaveDockableWindowsVisibilityRec(ini::IniFile& iniFile, const std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
+        static void SaveDockableWindowsVisibilityRec(ini::IniFile& iniFile, const std::vector<DockableWindow*>& dockableWindows)
         {
             for (const auto& dockableWindow: dockableWindows)
             {
@@ -368,7 +368,7 @@ namespace HelloImGui
             iniParts.WriteToFile(iniPartsFilename);
         }
 
-        void LoadDockableWindowsVisibilityRec(ini::IniFile& iniFile, std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
+        void LoadDockableWindowsVisibilityRec(ini::IniFile& iniFile, std::vector<DockableWindow*>& dockableWindows)
         {
             for (auto& dockableWindow: dockableWindows)
             {

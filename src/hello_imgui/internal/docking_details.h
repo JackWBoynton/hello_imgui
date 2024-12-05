@@ -17,8 +17,8 @@ void ConfigureImGuiDocking(const ImGuiWindowParams& imGuiWindowParams);
 void ProvideWindowOrDock(RunnerParams& runnerParams);
 void CloseWindowOrDock(ImGuiWindowParams& imGuiWindowParams);
 void ShowViewMenu(RunnerParams & runnerParams);
-void ShowDockableWindows(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows);
-bool ApplyWindowDockingLocation(const std::shared_ptr<DockableWindow>& dockableWindow);
+void ShowDockableWindows(std::vector<DockableWindow*>& dockableWindows);
+bool ApplyWindowDockingLocation(DockableWindow* dockableWindow);
 }  // namespace DockingDetails
 
 }  // namespace HelloImGui
