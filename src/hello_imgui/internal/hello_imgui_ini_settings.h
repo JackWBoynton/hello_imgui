@@ -9,6 +9,8 @@
 
 namespace HelloImGui
 {
+    struct RunnerParams;
+
     namespace HelloImGuiIniSettings
     {
         /*
@@ -36,6 +38,8 @@ namespace HelloImGui
             ...
          */
 
+        struct IniFilenameOrContent;
+
         struct IniParts
         {
             struct IniPart
@@ -48,38 +52,59 @@ namespace HelloImGui
             std::string    GetIniPart(const std::string& name);
             void           SetIniPart(const std::string& name, const std::string& content);
 
-            static IniParts LoadFromFile(const std::string& iniPartsFilename);
-            void            WriteToFile(const std::string& iniPartsFilename);
+            static IniParts Load(IniFilenameOrContent filenameOrContent);
+            void            Write(IniFilenameOrContent filenameOrContent);
 
             std::vector<IniPart> Parts;
         };
         IniParts SplitIniParts(const std::string& s);
         std::string JoinIniParts(const IniParts& parts);
 
+        enum class IniFilenameOrContentMode {
+            FILENAME,
+            CONTENT,
+        };
+
+        struct IniFilenameOrContent
+        {
+            std::string filename;
+            std::string content;
+            IniParts    parts;
+            IniFilenameOrContentMode mode;
+
+            static IniFilenameOrContent FromFilename(std::string filename) {
+                return IniFilenameOrContent{filename, "", {}, IniFilenameOrContentMode::FILENAME};
+            }
+
+            static IniFilenameOrContent FromContent(std::string content) {
+                return IniFilenameOrContent{"", content, {}, IniFilenameOrContentMode::CONTENT};
+            }
+        };
+
         //
         // The settings below are global to the app
         //
-        void SaveLastRunWindowBounds(const std::string& iniPartsFilename, const ScreenBounds& windowBounds);
-        std::optional<ScreenBounds> LoadLastRunWindowBounds(const std::string& iniPartsFilename);
-        std::optional<float> LoadLastRunDpiWindowSizeFactor(const std::string& iniPartsFilename);
-        void SaveHelloImGuiMiscSettings(const std::string& iniPartsFilename, const RunnerParams& runnerParams);
-        void LoadHelloImGuiMiscSettings(const std::string& iniPartsFilename, RunnerParams* inOutRunnerParams);
+        void SaveLastRunWindowBounds(IniFilenameOrContent filenameOrContent, const ScreenBounds& windowBounds);
+        std::optional<ScreenBounds> LoadLastRunWindowBounds(IniFilenameOrContent filenameOrContent);
+        std::optional<float> LoadLastRunDpiWindowSizeFactor(IniFilenameOrContent filenameOrContent);
+        void SaveHelloImGuiMiscSettings(IniFilenameOrContent filenameOrContent, const RunnerParams& runnerParams);
+        void LoadHelloImGuiMiscSettings(IniFilenameOrContent filenameOrContent, RunnerParams* inOutRunnerParams);
 
         //
         // The settings below are saved with values that can differ from layout to layout
         //
-        void LoadImGuiSettings(const std::string& iniPartsFilename, const std::string& layoutName);
-        void SaveImGuiSettings(const std::string& iniPartsFilename, const std::string& layoutName);
-        bool HasUserDockingSettingsInImguiSettings(const std::string& iniPartsFilename, const DockingParams& dockingParams);
+        void LoadImGuiSettings(IniFilenameOrContent filenameOrContent, const std::string& layoutName);
+        void SaveImGuiSettings(IniFilenameOrContent filenameOrContent, const std::string& layoutName);
+        bool HasUserDockingSettingsInImguiSettings(IniFilenameOrContent filenameOrContent, const DockingParams& dockingParams);
 
-        void SaveDockableWindowsVisibility(const std::string& iniPartsFilename, const DockingParams& dockingParams);
-        void LoadDockableWindowsVisibility(const std::string& iniPartsFilename, DockingParams* inOutDockingParams);
+        void SaveDockableWindowsVisibility(IniFilenameOrContent filenameOrContent, const DockingParams& dockingParams);
+        void LoadDockableWindowsVisibility(IniFilenameOrContent filenameOrContent, DockingParams* inOutDockingParams);
 
         //
         // User prefs
         //
-        void        SaveUserPref(const std::string& iniPartsFilename, const std::string& userPrefName, const std::string& userPrefContent);
-        std::string LoadUserPref(const std::string& iniPartsFilename, const std::string& userPrefName);
+        void        SaveUserPref(IniFilenameOrContent filenameOrContent, const std::string& userPrefName, const std::string& userPrefContent);
+        std::string LoadUserPref(IniFilenameOrContent filenameOrContent, const std::string& userPrefName);
 
     }
 }

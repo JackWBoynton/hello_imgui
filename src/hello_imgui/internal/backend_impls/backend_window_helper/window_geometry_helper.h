@@ -1,6 +1,7 @@
 #pragma once
 #include "hello_imgui/app_window_params.h"
 #include "hello_imgui/internal/backend_impls/backend_window_helper/backend_window_helper.h"
+#include "hello_imgui/internal/hello_imgui_ini_settings.h"
 
 #include <optional>
 
@@ -12,9 +13,9 @@ namespace HelloImGui
     public:
         WindowGeometry& mGeometry;
         bool mRestoreLast;
-        std::string mWindowGeometryIniFilename;
+        HelloImGuiIniSettings::IniFilenameOrContent mWindowGeometryIniFilename;
 
-        WindowGeometryHelper(WindowGeometry &geometry, bool restoreLast, std::string windowGeometryIniFilename);
+        WindowGeometryHelper(WindowGeometry &geometry, bool restoreLast, HelloImGuiIniSettings::IniFilenameOrContent windowGeometryIniFilename);
 
         bool HasInitialWindowSizeInfo() const;
         ScreenBounds AppWindowBoundsInitial(const std::vector<ScreenBounds>& allMonitorsWorkAreas);

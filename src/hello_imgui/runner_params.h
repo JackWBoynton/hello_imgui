@@ -12,6 +12,11 @@
 namespace HelloImGui
 {
 
+namespace HelloImGuiIniSettings
+{
+    struct IniFilenameOrContent;
+}
+
 // --------------------------------------------------------------------------------------------------------------------
 
 // @@md#PlatformBackendType
@@ -298,7 +303,8 @@ struct RunnerParams
 // @@md#IniIniSettingsLocation
 
 // IniSettingsLocation returns the path to the ini file for the application settings.
-std::string IniSettingsLocation(const RunnerParams& runnerParams);
+
+HelloImGuiIniSettings::IniFilenameOrContent IniSettingsLocation(const RunnerParams& runnerParams);
 
 // HasIniSettings returns true if the ini file for the application settings exists.
 bool HasIniSettings(const RunnerParams& runnerParams);

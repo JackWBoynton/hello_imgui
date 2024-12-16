@@ -1,5 +1,7 @@
 #include "hello_imgui/runner_params.h"
 
+#include "hello_imgui/internal/hello_imgui_ini_settings.h"
+
 #include <filesystem>
 
 namespace HelloImGui
@@ -25,8 +27,9 @@ namespace HelloImGui
 
 
     // IniSettingsLocation returns the path to the ini file for the application settings.
-    std::string IniSettingsLocation(const RunnerParams& runnerParams)
+    HelloImGuiIniSettings::IniFilenameOrContent IniSettingsLocation(const RunnerParams& runnerParams)
     {
+        HelloImGuiIniSettings::IniFilenameOrContent iniFilenameOrContent;
         auto _getIniFileName = [& runnerParams]() -> std::string
         {
             auto _stringToSaneFilename=[](const std::string& s, const std::string& extension) -> std::string
@@ -77,33 +80,42 @@ namespace HelloImGui
         bool settingsDirIsAccessible = mkdirToFilename(iniFullFilename);
         IM_ASSERT(settingsDirIsAccessible);
 
-        return iniFullFilename;
+        iniFilenameOrContent.filename = iniFullFilename;
+        return iniFilenameOrContent;
     }
 
     // DeleteIniSettings deletes the ini file for the application settings.
     void DeleteIniSettings(const RunnerParams& runnerParams)
     {
-        std::string iniFullFilename = IniSettingsLocation(runnerParams);
+        auto iniFilenameOrContent = IniSettingsLocation(runnerParams);
 
-        if (iniFullFilename.empty())
+        if (iniFilenameOrContent.content.empty() && iniFilenameOrContent.filename.empty())
             return;
 
-        if (!std::filesystem::exists(iniFullFilename))
+        if (!iniFilenameOrContent.filename.empty() && !std::filesystem::exists(iniFilenameOrContent.filename))
             return;
 
-        bool success = std::filesystem::remove(iniFullFilename);
+        if (!iniFilenameOrContent.content.empty())
+        {
+            iniFilenameOrContent.content.clear();
+            return;
+        }
+        bool success = std::filesystem::remove(iniFilenameOrContent.filename);
         IM_ASSERT(success && "Failed to delete ini file %s");
     }
 
     // HasIniSettings returns true if the ini file for the application settings exists.
     bool HasIniSettings(const RunnerParams& runnerParams)
     {
-        std::string iniFullFilename = IniSettingsLocation(runnerParams);
+        auto iniFilenameOrContent = IniSettingsLocation(runnerParams);
 
-        if (iniFullFilename.empty())
+        if (iniFilenameOrContent.content.empty() && iniFilenameOrContent.filename.empty())
             return false;
+        
+        if (!iniFilenameOrContent.content.empty())
+            return true;
 
-        return std::filesystem::exists(iniFullFilename);
+        return std::filesystem::exists(iniFilenameOrContent.filename);
     }
 
 }  // namespace HelloImGui
