@@ -226,7 +226,7 @@ struct DockingParams
 
     // `dockableWindows`: _vector[DockableWindow]_.
     //  List of the dockable windows, together with their Gui code
-    std::vector<DockableWindow> dockableWindows;
+    std::vector<DockableWindow*> dockableWindows;
 
     // `layoutName`: _string, default="default"_.
     //  Displayed name of the layout.

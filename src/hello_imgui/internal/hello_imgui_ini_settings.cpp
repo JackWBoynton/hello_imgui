@@ -333,7 +333,7 @@ namespace HelloImGui
             for (const auto& dockableWindow: dockingParams.dockableWindows)
             {
                 if (
-                std::find(windowsWithSettings.begin(), windowsWithSettings.end(), dockableWindow.label)
+                std::find(windowsWithSettings.begin(), windowsWithSettings.end(), dockableWindow->label)
                 == windowsWithSettings.end())
                 {
                     return false;
@@ -342,17 +342,17 @@ namespace HelloImGui
             return true;
         }
 
-        static void SaveDockableWindowsVisibilityRec(ini::IniFile& iniFile, const std::vector<DockableWindow>& dockableWindows)
+        static void SaveDockableWindowsVisibilityRec(ini::IniFile& iniFile, const std::vector<DockableWindow*>& dockableWindows)
         {
             for (const auto& dockableWindow: dockableWindows)
             {
-                if (dockableWindow.rememberIsVisible)
+                if (dockableWindow->rememberIsVisible)
                 {
-                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow.label);
-                    iniFile["Visibility"][iniValueName] = dockableWindow.isVisible;
+                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow->label);
+                    iniFile["Visibility"][iniValueName] = dockableWindow->isVisible;
                 }
-                if (!dockableWindow.dockingParams.dockableWindows.empty())
-                    SaveDockableWindowsVisibilityRec(iniFile, dockableWindow.dockingParams.dockableWindows);
+                if (!dockableWindow->dockingParams.dockableWindows.empty())
+                    SaveDockableWindowsVisibilityRec(iniFile, dockableWindow->dockingParams.dockableWindows);
             }
         }
 
@@ -368,22 +368,22 @@ namespace HelloImGui
             iniParts.WriteToFile(iniPartsFilename);
         }
 
-        void LoadDockableWindowsVisibilityRec(ini::IniFile& iniFile, std::vector<DockableWindow>& dockableWindows)
+        void LoadDockableWindowsVisibilityRec(ini::IniFile& iniFile, std::vector<DockableWindow*>& dockableWindows)
         {
             for (auto& dockableWindow: dockableWindows)
             {
-                if (dockableWindow.rememberIsVisible)
+                if (dockableWindow->rememberIsVisible)
                 {
-                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow.label);
+                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow->label);
                     std::string boolString = iniFile["Visibility"][iniValueName].as<std::string>();
 
                     if (boolString == "true")
-                        dockableWindow.isVisible = true;
+                        dockableWindow->isVisible = true;
                     if (boolString == "false")
-                        dockableWindow.isVisible = false;
+                        dockableWindow->isVisible = false;
                 }
-                if (!dockableWindow.dockingParams.dockableWindows.empty())
-                    LoadDockableWindowsVisibilityRec(iniFile, dockableWindow.dockingParams.dockableWindows);
+                if (!dockableWindow->dockingParams.dockableWindows.empty())
+                    LoadDockableWindowsVisibilityRec(iniFile, dockableWindow->dockingParams.dockableWindows);
             }
         }
 

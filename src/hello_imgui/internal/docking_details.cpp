@@ -144,13 +144,13 @@ void ApplyDockingSplits(const std::vector<DockingSplit>& dockingSplits)
 }
 
 void ApplyWindowDockingLocations(
-    const std::vector<DockableWindow> & dockableWindows)
+    const std::vector<DockableWindow*> & dockableWindows)
 {
     for (const auto & dockableWindow: dockableWindows)
     {
         ImGui::DockBuilderDockWindow(
-            dockableWindow.label.c_str(),
-            SplitIdsHelper::GetSplitId(dockableWindow.dockSpaceName)
+            dockableWindow->label.c_str(),
+            SplitIdsHelper::GetSplitId(dockableWindow->dockSpaceName)
         );
     }
 }
@@ -214,29 +214,29 @@ void MenuView_Layouts(RunnerParams& runnerParams)
     ImGui::PopID();
 }
 
-static void RenderDockableWindowViews(std::vector<DockableWindow>& dockableWindows) {
+static void RenderDockableWindowViews(std::vector<DockableWindow*>& dockableWindows) {
     for (auto& dockableWindow: dockableWindows)
     {
-        if (!dockableWindow.includeInViewMenu)
+        if (!dockableWindow->includeInViewMenu)
             continue;
         
-        if (!dockableWindow.dockingParams.dockableWindows.empty() && !ImGui::IsKeyDown(ImGuiKey_ModShift) && dockableWindow.isVisible) {
+        if (!dockableWindow->dockingParams.dockableWindows.empty() && !ImGui::IsKeyDown(ImGuiKey_ModShift) && dockableWindow->isVisible) {
 
-            if (ImGui::BeginMenu(dockableWindow.label.c_str()))
+            if (ImGui::BeginMenu(dockableWindow->label.c_str()))
             {
-                RenderDockableWindowViews(dockableWindow.dockingParams.dockableWindows);
+                RenderDockableWindowViews(dockableWindow->dockingParams.dockableWindows);
                 ImGui::EndMenu();
             }
 
         } else {
-            if (dockableWindow.canBeClosed)
+            if (dockableWindow->canBeClosed)
             {
-                if (ImGui::MenuItem(dockableWindow.label.c_str(), nullptr, dockableWindow.isVisible))
-                    dockableWindow.isVisible = ! dockableWindow.isVisible;
+                if (ImGui::MenuItem(dockableWindow->label.c_str(), nullptr, dockableWindow->isVisible))
+                    dockableWindow->isVisible = ! dockableWindow->isVisible;
             }
             else
             {
-                ImGui::MenuItem(dockableWindow.label.c_str(), nullptr, dockableWindow.isVisible, false);
+                ImGui::MenuItem(dockableWindow->label.c_str(), nullptr, dockableWindow->isVisible, false);
             }
         }
     }
@@ -255,12 +255,12 @@ void MenuView_DockableWindows(RunnerParams& runnerParams)
 
     if (ImGui::MenuItem("View All##DSQSDDF"))
         for (auto& dockableWindow: runnerParams.dockingParams.dockableWindows)
-            if (dockableWindow.canBeClosed && dockableWindow.includeInViewMenu)
-                dockableWindow.isVisible = true;
+            if (dockableWindow->canBeClosed && dockableWindow->includeInViewMenu)
+                dockableWindow->isVisible = true;
     if (ImGui::MenuItem("Hide All##DSQSDDF"))
         for (auto& dockableWindow: runnerParams.dockingParams.dockableWindows)
-            if (dockableWindow.canBeClosed && dockableWindow.includeInViewMenu)
-                dockableWindow.isVisible = false;
+            if (dockableWindow->canBeClosed && dockableWindow->includeInViewMenu)
+                dockableWindow->isVisible = false;
 
     RenderDockableWindowViews(dockableWindows);
 
@@ -300,18 +300,18 @@ void ShowViewMenu(RunnerParams & runnerParams)
     }
 }
 
-void ImplProviderNestedDockspace(const DockableWindow& dockableWindow)
+void ImplProviderNestedDockspace(const DockableWindow* dockableWindow)
 {
-    ImGuiID dockSpaceId = ImGui::GetID(dockableWindow.label.c_str());
-    SplitIdsHelper::SetSplitId(dockableWindow.label, dockSpaceId);
-    ImGui::DockSpace(dockSpaceId, dockableWindow.windowSize, dockableWindow.dockingParams.mainDockSpaceNodeFlags);
+    ImGuiID dockSpaceId = ImGui::GetID(dockableWindow->label.c_str());
+    SplitIdsHelper::SetSplitId(dockableWindow->label, dockSpaceId);
+    ImGui::DockSpace(dockSpaceId, dockableWindow->windowSize, dockableWindow->dockingParams.mainDockSpaceNodeFlags);
 }
 
 static void PropagateLayoutReset(DockingParams& dockingParams, bool layoutReset)
 {
     dockingParams.layoutReset = layoutReset;
     for (auto &dockableWindow : dockingParams.dockableWindows)
-        PropagateLayoutReset(dockableWindow.dockingParams, layoutReset);
+        PropagateLayoutReset(dockableWindow->dockingParams, layoutReset);
 }
 
 void ApplyDockLayout(DockingParams& dockingParams, const char* dockSpaceName)
@@ -333,51 +333,51 @@ void ApplyDockLayout(DockingParams& dockingParams, const char* dockSpaceName)
     }
 }
 
-void ShowDockableWindows(std::vector<DockableWindow>& dockableWindows)
+void ShowDockableWindows(std::vector<DockableWindow*>& dockableWindows)
 {
     bool wereAllDockableWindowsInited = (ImGui::GetFrameCount() > 1);
 
     for (auto& dockableWindow: dockableWindows)
     {
-        bool shallFocusWindow = dockableWindow.focusWindowAtNextFrame && wereAllDockableWindowsInited;
+        bool shallFocusWindow = dockableWindow->focusWindowAtNextFrame && wereAllDockableWindowsInited;
 
         if (shallFocusWindow)
-            dockableWindow.isVisible = true;
+            dockableWindow->isVisible = true;
 
-        if (dockableWindow.isVisible)
+        if (dockableWindow->isVisible)
         {
-            if (dockableWindow.callBeginEnd)
+            if (dockableWindow->callBeginEnd)
             {
                 if (shallFocusWindow)
                     ImGui::SetNextWindowFocus();
-                if (dockableWindow.windowSize.x > 0.f)
-                    ImGui::SetNextWindowSize(dockableWindow.windowSize, dockableWindow.windowSizeCondition);
-                if (dockableWindow.windowPosition.x > 0.f)
-                    ImGui::SetNextWindowPos(dockableWindow.windowPosition, dockableWindow.windowPositionCondition);
+                if (dockableWindow->windowSize.x > 0.f)
+                    ImGui::SetNextWindowSize(dockableWindow->windowSize, dockableWindow->windowSizeCondition);
+                if (dockableWindow->windowPosition.x > 0.f)
+                    ImGui::SetNextWindowPos(dockableWindow->windowPosition, dockableWindow->windowPositionCondition);
                 bool not_collapsed = true;
-                if (dockableWindow.canBeClosed)
-                    not_collapsed = ImGui::Begin(dockableWindow.label.c_str(), &dockableWindow.isVisible, dockableWindow.imGuiWindowFlags);
+                if (dockableWindow->canBeClosed)
+                    not_collapsed = ImGui::Begin(dockableWindow->label.c_str(), &dockableWindow->isVisible, dockableWindow->imGuiWindowFlags);
                 else
-                    not_collapsed = ImGui::Begin(dockableWindow.label.c_str(), nullptr, dockableWindow.imGuiWindowFlags);
-                if (not_collapsed && dockableWindow.GuiFunction)
-                    dockableWindow.GuiFunction();
-                if (!dockableWindow.dockingParams.dockingSplits.empty()) {
+                    not_collapsed = ImGui::Begin(dockableWindow->label.c_str(), nullptr, dockableWindow->imGuiWindowFlags);
+                if (not_collapsed && dockableWindow->GuiFunction)
+                    dockableWindow->GuiFunction();
+                if (!dockableWindow->dockingParams.dockingSplits.empty()) {
                     ImplProviderNestedDockspace(dockableWindow);
-                    ApplyDockLayout(dockableWindow.dockingParams, dockableWindow.label.c_str());
+                    ApplyDockLayout(dockableWindow->dockingParams, dockableWindow->label.c_str());
                 }
-                if (!dockableWindow.dockingParams.dockableWindows.empty())
-                    ShowDockableWindows(dockableWindow.dockingParams.dockableWindows);
+                if (!dockableWindow->dockingParams.dockableWindows.empty())
+                    ShowDockableWindows(dockableWindow->dockingParams.dockableWindows);
                 ImGui::End();
 
                 if (shallFocusWindow)
-                    DockingDetails::_makeImGuiWindowTabVisible(dockableWindow.label);
+                    DockingDetails::_makeImGuiWindowTabVisible(dockableWindow->label);
 
                 if (shallFocusWindow)
-                    dockableWindow.focusWindowAtNextFrame = false;
+                    dockableWindow->focusWindowAtNextFrame = false;
             }
             else
             {
-                dockableWindow.GuiFunction();
+                dockableWindow->GuiFunction();
             }
         }
     }
@@ -672,13 +672,13 @@ void CloseWindowOrDock(ImGuiWindowParams& imGuiWindowParams)
 
 }  // namespace DockingDetails
 
-static DockableWindow * GetDockableWindowRec(const std::string &label, std::vector<DockableWindow> &dockableWindows)
+static DockableWindow* GetDockableWindowRec(const std::string &label, std::vector<DockableWindow*> &dockableWindows)
 {
     for (auto & dockableWindow: dockableWindows)
     {
-        if (dockableWindow.label == label)
-            return &dockableWindow;
-        DockableWindow * dockableWindowRec = GetDockableWindowRec(label, dockableWindow.dockingParams.dockableWindows);
+        if (dockableWindow->label == label)
+            return dockableWindow;
+        DockableWindow * dockableWindowRec = GetDockableWindowRec(label, dockableWindow->dockingParams.dockableWindows);
         if (dockableWindowRec != nullptr)
             return dockableWindowRec;
     }
@@ -732,7 +732,7 @@ namespace AddDockableWindowHelper
 
     struct DockableWindowWaitingForAddition
     {
-        DockableWindow dockableWindow;
+        DockableWindow* dockableWindow;
         DockableWindowAdditionState state = DockableWindowAdditionState::Waiting;
         bool forceDockspace;
     };
@@ -740,8 +740,9 @@ namespace AddDockableWindowHelper
     std::vector<DockableWindowWaitingForAddition> gDockableWindowsToAdd;
     std::vector<std::string> gDockableWindowsToRemove;
 
-    void AddDockableWindow(const DockableWindow& dockableWindow, bool forceDockspace)
-    {
+    void AddDockableWindow(DockableWindow* dockableWindow, bool forceDockspace)
+    {;
+        assert(dockableWindow->label != "");
         gDockableWindowsToAdd.push_back({dockableWindow, DockableWindowAdditionState::Waiting, forceDockspace});
     }
 
@@ -749,32 +750,33 @@ namespace AddDockableWindowHelper
     {
         for (auto & dockableWindow: gDockableWindowsToAdd)
         {
+            assert(dockableWindow.dockableWindow->label != "");
             if (dockableWindow.state == DockableWindowAdditionState::Waiting)
             {
                 bool doesWindowHavePreviousSetting;
                 {
-                    ImGuiID window_id = ImHashStr(dockableWindow.dockableWindow.label.c_str());
+                    ImGuiID window_id = ImHashStr(dockableWindow.dockableWindow->label.c_str());
                     ImGuiWindowSettings* previousWindowSettings = ImGui::FindWindowSettingsByID(window_id);
                     doesWindowHavePreviousSetting = (previousWindowSettings != nullptr);
                 }
                 if (!doesWindowHavePreviousSetting || dockableWindow.forceDockspace)
                 {
-                    auto dockSpaceName = dockableWindow.dockableWindow.dockSpaceName;
+                    auto dockSpaceName = dockableWindow.dockableWindow->dockSpaceName;
                     if (!dockSpaceName.empty())
                     {
                         auto dockId = HelloImGui::GetRunnerParams()->dockingParams.dockSpaceIdFromName(dockSpaceName);
                         if (dockId.has_value())
                         {
-                            ImGui::Begin(dockableWindow.dockableWindow.label.c_str());
+                            ImGui::Begin(dockableWindow.dockableWindow->label.c_str());
                             //ImGui::Dummy(ImVec2(10, 10));
-                            dockableWindow.dockableWindow.GuiFunction();
+                            dockableWindow.dockableWindow->GuiFunction();
                             ImGui::End();
 
-                            ImGui::DockBuilderDockWindow(dockableWindow.dockableWindow.label.c_str(), dockId.value());
+                            ImGui::DockBuilderDockWindow(dockableWindow.dockableWindow->label.c_str(), dockId.value());
                         }
                         else
                         {
-                            fprintf(stderr, "DockableWindow %s: dockSpaceName %s not found\n", dockableWindow.dockableWindow.label.c_str(), dockableWindow.dockableWindow.dockSpaceName.c_str());
+                            fprintf(stderr, "DockableWindow %s: dockSpaceName %s not found\n", dockableWindow.dockableWindow->label.c_str(), dockableWindow.dockableWindow->dockSpaceName.c_str());
                         }
                     }
                 }
@@ -783,24 +785,47 @@ namespace AddDockableWindowHelper
         }
     }
 
-    static bool InsertDockableWindow(const DockableWindow& dockableWindow, std::vector<DockableWindow>& dockableWindows)
+    static bool InsertDockableWindow(DockableWindow* dockableWindow, std::vector<DockableWindow*>& dockableWindows)
     {
         // find the correct place to insert the dockable window, searching through the recursive dockable windows to find the correct dockspace
+        if (dockableWindow->dockSpaceName == "MainDockSpace")
+        {
+            dockableWindows.push_back(dockableWindow);
+            return true;
+        }
+
         for (auto & dockableWindowInList: dockableWindows)
         {
-            if (dockableWindowInList.label == dockableWindow.dockSpaceName)
+            if (dockableWindowInList->label == dockableWindow->dockSpaceName)
             {
-                dockableWindowInList.dockingParams.dockableWindows.push_back(dockableWindow);
+                dockableWindowInList->dockingParams.dockableWindows.push_back(dockableWindow);
                 return true;
             }
             else
             {
-                if (InsertDockableWindow(dockableWindow, dockableWindowInList.dockingParams.dockableWindows))
+                if (InsertDockableWindow(dockableWindow, dockableWindowInList->dockingParams.dockableWindows))
                     return true;
             }
         }
 
         return false;
+    }
+
+    static void CleanupNullDockableWindows(std::vector<DockableWindow*>& dockableWindows)
+    {
+        dockableWindows.erase(
+            std::remove_if(
+                dockableWindows.begin(),
+                dockableWindows.end(),
+                [](DockableWindow* dockableWindow) {
+                    return dockableWindow == nullptr;
+                }
+            ),
+            dockableWindows.end()
+        );
+
+        for (auto & dockableWindow: dockableWindows)
+            CleanupNullDockableWindows(dockableWindow->dockingParams.dockableWindows);
     }
 
     void Callback_2_PreNewFrame()
@@ -812,7 +837,7 @@ namespace AddDockableWindowHelper
             {
                 if (!InsertDockableWindow(dockableWindow.dockableWindow, HelloImGui::GetRunnerParams()->dockingParams.dockableWindows))
                 {
-                    fprintf(stderr, "DockableWindow CB2 %s: dockSpaceName %s not found\n", dockableWindow.dockableWindow.label.c_str(), dockableWindow.dockableWindow.dockSpaceName.c_str());
+                    fprintf(stderr, "DockableWindow CB2 %s: dockSpaceName %s not found\n", dockableWindow.dockableWindow->label.c_str(), dockableWindow.dockableWindow->dockSpaceName.c_str());
                     // Add to the base
                     HelloImGui::GetRunnerParams()->dockingParams.dockableWindows.push_back(dockableWindow.dockableWindow);
                 }
@@ -841,21 +866,26 @@ namespace AddDockableWindowHelper
                 std::remove_if(
                     dockableWindows.begin(),
                     dockableWindows.end(),
-                    [&dockableWindowName](const DockableWindow& dockableWindow) {
-                        return dockableWindow.label == dockableWindowName;
+                    [&dockableWindowName](DockableWindow* dockableWindow) {
+                        return dockableWindow->label == dockableWindowName;
                     }
                 ),
                 dockableWindows.end()
             );
         }
         gDockableWindowsToRemove.clear();
+
+        // check if any dockable windows are null (recursively)
+        CleanupNullDockableWindows(dockableWindows);
     }
 
 } // namespace AddDockableWindowHelper
 
 
-void AddDockableWindow(const DockableWindow& dockableWindow, bool forceDockspace)
+void AddDockableWindow(DockableWindow* dockableWindow, bool forceDockspace)
 {
+    assert(dockableWindow != nullptr);
+    assert(dockableWindow->label != "");
     AddDockableWindowHelper::AddDockableWindow(dockableWindow, forceDockspace);
 }
 
