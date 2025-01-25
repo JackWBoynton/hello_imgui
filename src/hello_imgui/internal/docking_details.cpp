@@ -128,6 +128,7 @@ void DoSplit(const DockingSplit & dockingSplit)
             dockingSplit.ratio,
             nullptr,
             &initialDock_imguiId);
+    ImGui::DockBuilderSetNodeSize(newDock_imguiId, dockingSplit.defaultSize);
 
     SplitIdsHelper::SetSplitId(dockingSplit.initialDock, initialDock_imguiId);
     SplitIdsHelper::SetSplitId(dockingSplit.newDock, newDock_imguiId);
@@ -314,6 +315,26 @@ static void PropagateLayoutReset(DockingParams& dockingParams, bool layoutReset)
         PropagateLayoutReset(dockableWindow->dockingParams, layoutReset);
 }
 
+static void SplitAndApplyDockingLocations(DockingParams& dockingParams, const char* dockSpaceName)
+{
+    ImGuiID dockspaceId = ImGui::GetID(dockSpaceName);
+    ImGui::DockBuilderRemoveNodeChildNodes(dockspaceId);
+    //if (!IsMainDockSpaceAlreadySplit(mainDockspaceId))
+        ApplyDockingSplits(dockingParams.dockingSplits);
+    ApplyWindowDockingLocations(dockingParams.dockableWindows);
+}
+
+bool GetDockSplitsExist(const DockingParams& dockingParams)
+{
+    for (const auto& dockingSplit: dockingParams.dockingSplits)
+    {
+        if (!SplitIdsHelper::ContainsSplit(dockingSplit.newDock))
+            return false;
+    }
+
+    return true;
+}
+
 void ApplyDockLayout(DockingParams& dockingParams, const char* dockSpaceName)
 {
     bool isFirstFrame = ImGui::GetFrameCount() <= 1;
@@ -322,13 +343,9 @@ void ApplyDockLayout(DockingParams& dockingParams, const char* dockSpaceName)
     
     PropagateLayoutReset(dockingParams, dockingParams.layoutReset);
 
-    if (dockingParams.layoutReset)
+    if (dockingParams.layoutReset || !GetDockSplitsExist(dockingParams))
     {
-        ImGuiID dockspaceId = ImGui::GetID(dockSpaceName);
-        ImGui::DockBuilderRemoveNodeChildNodes(dockspaceId);
-        //if (!IsMainDockSpaceAlreadySplit(mainDockspaceId))
-            ApplyDockingSplits(dockingParams.dockingSplits);
-        ApplyWindowDockingLocations(dockingParams.dockableWindows);
+        SplitAndApplyDockingLocations(dockingParams, dockSpaceName);
         dockingParams.layoutReset = false;
     }
 }
@@ -339,6 +356,9 @@ void ShowDockableWindows(std::vector<DockableWindow*>& dockableWindows)
 
     for (auto& dockableWindow: dockableWindows)
     {
+        if (dockableWindow->state != DockableWindowAdditionState::AddedToHelloImGui)
+            continue;
+
         bool shallFocusWindow = dockableWindow->focusWindowAtNextFrame && wereAllDockableWindowsInited;
 
         if (shallFocusWindow)
@@ -723,17 +743,10 @@ namespace AddDockableWindowHelper
     //   then we call `ImGui::DockBuilderDockWindow()` to dock the window to the correct dockspace
     // - Finally, in the second callback, the dockable window is added to HelloImGui::RunnerParams.dockingParams.dockableWindows
 
-    enum class DockableWindowAdditionState
-    {
-        Waiting,
-        AddedAsDummyToImGui,
-        AddedToHelloImGui
-    };
 
     struct DockableWindowWaitingForAddition
     {
         DockableWindow* dockableWindow;
-        DockableWindowAdditionState state = DockableWindowAdditionState::Waiting;
         bool forceDockspace;
     };
 
@@ -741,17 +754,18 @@ namespace AddDockableWindowHelper
     std::vector<std::string> gDockableWindowsToRemove;
 
     void AddDockableWindow(DockableWindow* dockableWindow, bool forceDockspace)
-    {;
+    {
         assert(dockableWindow->label != "");
-        gDockableWindowsToAdd.push_back({dockableWindow, DockableWindowAdditionState::Waiting, forceDockspace});
+        gDockableWindowsToAdd.push_back({dockableWindow, forceDockspace});
     }
 
     void Callback_1_GuiRender()
     {
         for (auto & dockableWindow: gDockableWindowsToAdd)
         {
+            assert(dockableWindow.dockableWindow != nullptr);
             assert(dockableWindow.dockableWindow->label != "");
-            if (dockableWindow.state == DockableWindowAdditionState::Waiting)
+            if (dockableWindow.dockableWindow->state == DockableWindowAdditionState::Waiting)
             {
                 bool doesWindowHavePreviousSetting;
                 {
@@ -768,19 +782,25 @@ namespace AddDockableWindowHelper
                         if (dockId.has_value())
                         {
                             ImGui::Begin(dockableWindow.dockableWindow->label.c_str());
-                            //ImGui::Dummy(ImVec2(10, 10));
-                            dockableWindow.dockableWindow->GuiFunction();
+                            ImGui::Dummy(ImVec2(10, 10));
+                            
+                            // since this render function may try to add additional windows to gDockableWindowsToAdd, we need to ensure that the caller cannot change the vector while we are iterating over it
+                            // dockableWindow.dockableWindow->GuiFunction();
                             ImGui::End();
 
                             ImGui::DockBuilderDockWindow(dockableWindow.dockableWindow->label.c_str(), dockId.value());
+
+                            dockableWindow.dockableWindow->state = DockableWindowAdditionState::AddedAsDummyToImGui;
                         }
                         else
                         {
                             fprintf(stderr, "DockableWindow %s: dockSpaceName %s not found\n", dockableWindow.dockableWindow->label.c_str(), dockableWindow.dockableWindow->dockSpaceName.c_str());
+                            assert(false);
                         }
                     }
+                } else {
+                    dockableWindow.dockableWindow->state = DockableWindowAdditionState::AddedAsDummyToImGui;
                 }
-                dockableWindow.state = DockableWindowAdditionState::AddedAsDummyToImGui;
             }
         }
     }
@@ -801,10 +821,25 @@ namespace AddDockableWindowHelper
                 dockableWindowInList->dockingParams.dockableWindows.push_back(dockableWindow);
                 return true;
             }
-            else
+        }
+
+        for (auto & dockableWindowInList: dockableWindows)
+        {
+            if (!dockableWindowInList->dockingParams.dockableWindows.empty() && InsertDockableWindow(dockableWindow, dockableWindowInList->dockingParams.dockableWindows))
+                return true;
+        }
+
+        // else this window must be a split window
+        // so check dockingParams.dockingSplits for a dockSpaceName == newDock
+        for (auto & dockableWindowInList: dockableWindows)
+        {
+            for (const auto & dockingSplit: dockableWindowInList->dockingParams.dockingSplits)
             {
-                if (InsertDockableWindow(dockableWindow, dockableWindowInList->dockingParams.dockableWindows))
+                if (dockingSplit.newDock == dockableWindow->dockSpaceName)
+                {
+                    dockableWindowInList->dockingParams.dockableWindows.push_back(dockableWindow);
                     return true;
+                }
             }
         }
 
@@ -833,7 +868,7 @@ namespace AddDockableWindowHelper
         // Add the dockable windows that have been added as dummy to ImGui to HelloImGui
         for (auto & dockableWindow: gDockableWindowsToAdd)
         {
-            if (dockableWindow.state == DockableWindowAdditionState::AddedAsDummyToImGui)
+            if (dockableWindow.dockableWindow->state == DockableWindowAdditionState::AddedAsDummyToImGui)
             {
                 if (!InsertDockableWindow(dockableWindow.dockableWindow, HelloImGui::GetRunnerParams()->dockingParams.dockableWindows))
                 {
@@ -842,7 +877,7 @@ namespace AddDockableWindowHelper
                     HelloImGui::GetRunnerParams()->dockingParams.dockableWindows.push_back(dockableWindow.dockableWindow);
                 }
                 // Regardless just move on to the next state
-                dockableWindow.state = DockableWindowAdditionState::AddedToHelloImGui;
+                dockableWindow.dockableWindow->state = DockableWindowAdditionState::AddedToHelloImGui;
             }
         }
 
@@ -852,7 +887,7 @@ namespace AddDockableWindowHelper
                 gDockableWindowsToAdd.begin(),
                 gDockableWindowsToAdd.end(),
                 [](const DockableWindowWaitingForAddition& dockableWindow) {
-                    return dockableWindow.state == DockableWindowAdditionState::AddedToHelloImGui;
+                    return dockableWindow.dockableWindow->state == DockableWindowAdditionState::AddedToHelloImGui;
                 }
             ),
             gDockableWindowsToAdd.end()

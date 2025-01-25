@@ -1,0 +1,5 @@
+include(hello_imgui_add_app)
+hello_imgui_add_app(hello_imgui_demo_workspaces hello_imgui_demo_workspaces.main.cpp lib.cpp view.cpp provider.cpp provider_selector.cpp ASSETS_LOCATION assets)
+if (EMSCRIPTEN)
+    hello_imgui_set_emscripten_target_initial_memory_megabytes(hello_imgui_demo_workspaces 120)
+endif()

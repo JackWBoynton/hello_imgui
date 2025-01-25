@@ -299,7 +299,6 @@ namespace HelloImGui
 		}
 		if (gAllDpiResponsiveFonts.empty())
 			return false;
-		printf("_reloadAllDpiResponsiveFonts\n");
 		auto& imguiFonts = ImGui::GetIO().Fonts;
 		imguiFonts->Clear();
 		for (auto & dpiResponsiveFont : gAllDpiResponsiveFonts)

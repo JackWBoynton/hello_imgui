@@ -5,7 +5,7 @@ else()
 endif()
 
 project(hello-imgui LANGUAGES C CXX VERSION "1.5.2")  # v1.5.2
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 
 if (IOS)
     set(DEPLOYMENT_TARGET "13.0" CACHE STRING "" FORCE)
@@ -15,7 +15,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(MACOSX TRUE CACHE BOOL "" FORCE)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 
 # Set HELLOIMGUI_BASEPATH / HELLOIMGUI_CMAKE_PATH
 include(${CMAKE_CURRENT_LIST_DIR}/hello_imgui_cmake/utils/cache_hello_imgui_paths.cmake)

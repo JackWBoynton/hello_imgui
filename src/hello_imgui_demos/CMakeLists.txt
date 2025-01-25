@@ -9,6 +9,7 @@ set(subdirs
     hello_imgui_demo_test_engine
     hello_custom_background
     hello_manual_render
+    hello_imgui_demo_workspaces
 )
 if(HELLOIMGUI_HAS_METAL)
     # Demo of EDR (Extended Dynamic Range) support, only for Metal

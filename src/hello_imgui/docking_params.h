@@ -193,11 +193,16 @@ struct DockingSplit
     //  (enable/disable resizing, splitting, tab bar, etc.)
     ImGuiDockNodeFlags nodeFlags = ImGuiDockNodeFlags_None;
 
+    // `defaultSize`: _ImVec2, default=(0.0f, 0.0f)_.
+    // Set this size to a non-zero value if you want to ensure that the new dock space
+    // has a specific size when it is created.
+    ImVec2 defaultSize = ImVec2(0.0f, 0.0f);
+
     // Constructor
     DockingSplit(const DockSpaceName& initialDock_ = "", const DockSpaceName& newDock_ = "",
                  ImGuiDir direction_ = ImGuiDir_Down, float ratio_ = 0.25f,
-                 ImGuiDockNodeFlags nodeFlags_ = ImGuiDockNodeFlags_None)
-        : initialDock(initialDock_), newDock(newDock_), direction(direction_), ratio(ratio_), nodeFlags(nodeFlags_) {}
+                 ImGuiDockNodeFlags nodeFlags_ = ImGuiDockNodeFlags_None, ImVec2 defaultSize_ = ImVec2(0.0f, 0.0f))
+        : initialDock(initialDock_), newDock(newDock_), direction(direction_), ratio(ratio_), nodeFlags(nodeFlags_), defaultSize(defaultSize_) {}
 };
 // @@md
 
@@ -275,6 +280,14 @@ struct DockingParams
     std::optional<ImGuiID> dockSpaceIdFromName(const std::string& dockSpaceName);
 };
 // @@md
+
+
+enum class DockableWindowAdditionState
+{
+    Waiting,
+    AddedAsDummyToImGui,
+    AddedToHelloImGui
+};
 
 // @@md#DockableWindow
 
@@ -354,6 +367,11 @@ struct DockableWindow
     // DockableWindows can also be dockspaces themselves.
     DockingParams dockingParams = {};
 
+    // `state`: _DockableWindowAdditionState, default=Waiting_.
+    //  State of the DockableWindow. Having this here allows us to conditionally call GuiFunction
+    //  only after the window has been added to ImGui.
+    DockableWindowAdditionState state = DockableWindowAdditionState::Waiting;
+
 
     // --------------- Constructor ------------------------------
     // Constructor
@@ -367,6 +385,9 @@ struct DockableWindow
           GuiFunction(guiFunction_),
           isVisible(isVisible_),
           canBeClosed(canBeClosed_) {}
+    
+    DockableWindow(const DockableWindow& other) = default;
+    DockableWindow& operator=(const DockableWindow& other) = default;
 
 };
 // @@md

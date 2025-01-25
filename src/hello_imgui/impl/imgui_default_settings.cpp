@@ -22,6 +22,7 @@ void LoadDefaultFont_WithFontAwesomeIcons()
 
     if ( ! HelloImGui::AssetExists(fontFilename))
     {
+        assert(false);
         ImGui::GetIO().Fonts->AddFontDefault();
         return;
     }
@@ -35,19 +36,25 @@ void LoadDefaultFont_WithFontAwesomeIcons()
 
 	if (defaultIconFont == HelloImGui::DefaultIconFont::NoIcons)
         return;
+    
+    HelloImGui::FontLoadingParams fontParams;
 
     std::string iconFontFile;
     if (defaultIconFont == HelloImGui::DefaultIconFont::FontAwesome4)
         iconFontFile = "fonts/fontawesome-webfont.ttf";
     else if (defaultIconFont == HelloImGui::DefaultIconFont::FontAwesome6)
         iconFontFile = "fonts/Font_Awesome_6_Free-Solid-900.otf";
-    else
+    else if (defaultIconFont == HelloImGui::DefaultIconFont::VsCodeIcons) {
+        iconFontFile = "fonts/vscode-codicons.ttf";
+        fontParams.fontConfig.GlyphOffset = ImVec2(1, 4.2);
+    } else
         return;
 
-    if ( ! HelloImGui::AssetExists(iconFontFile))
+    if ( ! HelloImGui::AssetExists(iconFontFile)) {
+        assert(false);
         return;
+    }
 
-    HelloImGui::FontLoadingParams fontParams;
     fontParams.mergeToLastFont = true;
     fontParams.useFullGlyphRange = true;
 

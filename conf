@@ -1,0 +1,78 @@
+[description]
+sw_version = "v3.5.1"
+git_hash = "396fe158"
+git_branch = "HEAD"
+release_type = "Prod"
+release_number = 0
+release_date = "2024-01-04"
+git_is_dirty = 0
+dbc_git_hash = "3f3fde2b"
+config_hash = 5922
+board_type = "BOARD_TYPE_LWDAQ_ACCELEROMETER"
+hw_version = 1
+
+[config]
+serial_number_model = 0
+serial_number_uid = 0
+
+[bootloader]
+can_base_id = 2048
+present = 1
+sw_version = "v2.14.0"
+git_hash = "3ec44710"
+git_branch = "HEAD"
+release_type = "Unreleased"
+release_number = 0
+release_date = "2023-11-16"
+git_is_dirty = 1
+dbc_git_hash = "e39f3c14"
+app_hash = 2618570731
+
+[config.can]
+base_id = 256
+id_type = "std"
+bit_rate = "can_500kbps"
+operation = "classic_can"
+
+[config.daq_accel_40g]
+output_data_rate = "2000_HZ"
+low_pass_filter = "ODR_DIV_5"
+high_pass_filter = "disabled"
+input_range = "40G"
+enable = "enabled"
+
+[config.daq_accel_400g]
+output_data_rate = "2560_HZ"
+low_pass_filter = "640_HZ"
+enable = "disabled"
+
+[config.daq_metrics.metrics]
+output_enable = "output_data"
+output_rate_hz = 1
+reset_after_send = "enabled"
+
+[config.daq_metrics.fft]
+output_period = 3
+output_fft_x = "disabled"
+output_fft_y = "disabled"
+output_fft_z = "disabled"
+window_function = "Hann"
+start_freq_hz = 4.0
+stop_freq_hz = 60.0
+bin_size_hz = 1.0
+
+[config.daq_accel_40g.calibration]
+ch1_x_linear_multiplier = 1.9499999325489625e-5
+ch1_x_linear_offset = 0.0
+ch2_y_linear_multiplier = 1.9499999325489625e-5
+ch2_y_linear_offset = 0.0
+ch3_z_linear_multiplier = 1.9499999325489625e-5
+ch3_z_linear_offset = 0.0
+
+[config.daq_accel_400g.calibration]
+ch1_x_linear_multiplier = 0.20000000298023224
+ch1_x_linear_offset = 0.0
+ch2_y_linear_multiplier = 0.20000000298023224
+ch2_y_linear_offset = 0.0
+ch3_z_linear_multiplier = 0.20000000298023224
+ch3_z_linear_offset = 0.0
