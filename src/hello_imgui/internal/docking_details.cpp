@@ -614,22 +614,22 @@ namespace DockingDetails
 
     void ShowToolbars(const RunnerParams& runnerParams)
     {
-        for (auto edgeToolbarType : HelloImGui::AllEdgeToolbarTypes())
-        {
-            if (runnerParams.callbacks.edgesToolbars.find(edgeToolbarType) !=
-                runnerParams.callbacks.edgesToolbars.end())
-            {
-                auto& edgeToolbar = runnerParams.callbacks.edgesToolbars.at(edgeToolbarType);
-                auto fullScreenRect = FixedWindowRect(runnerParams, edgeToolbarType);
-                std::string windowName =
-                    std::string("##") + HelloImGui::EdgeToolbarTypeName(edgeToolbarType) + "_2123243";
-                DoShowToolbar(fullScreenRect,
-                              edgeToolbar.ShowToolbar,
-                              windowName,
-                              edgeToolbar.options.WindowPaddingEm,
-                              edgeToolbar.options.WindowBg);
-            }
-        }
+        // for (auto edgeToolbarType : HelloImGui::AllEdgeToolbarTypes())
+        // {
+        //     if (runnerParams.callbacks.edgesToolbars.find(edgeToolbarType) !=
+        //         runnerParams.callbacks.edgesToolbars.end())
+        //     {
+        //         auto& edgeToolbar = runnerParams.callbacks.edgesToolbars.at(edgeToolbarType);
+        //         auto fullScreenRect = FixedWindowRect(runnerParams, edgeToolbarType);
+        //         std::string windowName =
+        //             std::string("##") + HelloImGui::EdgeToolbarTypeName(edgeToolbarType) + "_2123243";
+        //         DoShowToolbar(fullScreenRect,
+        //                       edgeToolbar.ShowToolbar,
+        //                       windowName,
+        //                       edgeToolbar.options.WindowPaddingEm,
+        //                       edgeToolbar.options.WindowBg);
+        //     }
+        // }
     }
 
     void DoCreateFullScreenImGuiWindow(const RunnerParams& runnerParams, bool useDocking)

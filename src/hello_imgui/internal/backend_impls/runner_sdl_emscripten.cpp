@@ -11,6 +11,7 @@ namespace HelloImGui
     void emscripten_imgui_main_loop(void* arg)
     {
         (void) arg;
+        printf("emscripten_imgui_main_loop\n");
         gRunnerEmscripten->CreateFramesAndRender();
     }
 
