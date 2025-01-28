@@ -826,6 +826,7 @@ namespace AddDockableWindowHelper
 
                             ImGui::DockBuilderDockWindow(dockableWindow.dockableWindow->label.c_str(),
                                                          dockId.value());
+                            dockableWindow.state = DockableWindowAdditionState::AddedAsDummyToImGui;
                         }
                         else
                         {
@@ -835,8 +836,9 @@ namespace AddDockableWindowHelper
                                     dockableWindow.dockableWindow->dockSpaceName.c_str());
                         }
                     }
+                } else {
+                  dockableWindow.state = DockableWindowAdditionState::AddedAsDummyToImGui;
                 }
-                dockableWindow.state = DockableWindowAdditionState::AddedAsDummyToImGui;
             }
         }
     }

@@ -359,7 +359,7 @@ struct DockableWindow
     // --------------- Constructor ------------------------------
     // Constructor
     DockableWindow(
-        const std::string & label_ = "",
+        const std::string & label_,
         const DockSpaceName & dockSpaceName_ = "",
         const VoidFunction guiFunction_ = EmptyVoidFunction(),
         bool isVisible_ = true,
