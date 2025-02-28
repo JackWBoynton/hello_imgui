@@ -196,12 +196,12 @@ struct DockingSplit
     // `defaultSize`: _ImVec2, default=(0.0f, 0.0f)_.
     // Set this size to a non-zero value if you want to ensure that the new dock space
     // has a specific size when it is created.
-    ImVec2 defaultSize = ImVec2(0.0f, 0.0f);
+    ImVec2 defaultSize = ImVec2(10.0f, 10.0f);
 
     // Constructor
     DockingSplit(const DockSpaceName& initialDock_ = "", const DockSpaceName& newDock_ = "",
                  ImGuiDir direction_ = ImGuiDir_Down, float ratio_ = 0.25f,
-                 ImGuiDockNodeFlags nodeFlags_ = ImGuiDockNodeFlags_None, ImVec2 defaultSize_ = ImVec2(0.0f, 0.0f))
+                 ImGuiDockNodeFlags nodeFlags_ = ImGuiDockNodeFlags_None, ImVec2 defaultSize_ = ImVec2(10.0f, 10.0f))
         : initialDock(initialDock_), newDock(newDock_), direction(direction_), ratio(ratio_), nodeFlags(nodeFlags_), defaultSize(defaultSize_) {}
 };
 // @@md
@@ -294,101 +294,22 @@ enum class DockableWindowAdditionState
 // DockableWindow is a struct that represents a window that can be docked.
 struct DockableWindow
 {
-    // --------------- Main params -------------------
-
-    // `label`: _string_. Title of the window. It should be unique! Use "##" to add a unique suffix if needed.
     std::string label;
-
-    // `dockSpaceName`: _DockSpaceName (aka string)_.
-    //  Id of the dock space where this window should initially be placed
     DockSpaceName dockSpaceName;
-
-    // `GuiFunction`: _VoidFunction_.
-    // Any function that will render this window's Gui
     VoidFunction GuiFunction = EmptyVoidFunction();
-
-
-    // --------------- Options --------------------------
-
-    // `isVisible`: _bool, default=true_.
-    //  Flag that indicates whether this window is visible or not.
     bool isVisible = true;
-
-    // `rememberIsVisible`: _bool, default=true_.
-    //  Flag that indicates whether the window visibility should be saved in settings.
     bool rememberIsVisible = true;
-
-    // `canBeClosed`: _bool, default=true_.
-    //  Flag that indicates whether the user can close this window.
     bool canBeClosed = true;
-
-    // `callBeginEnd`: _bool, default=true_.
-    //  Flag that indicates whether ImGui::Begin and ImGui::End
-    //  calls should be added automatically (with the given "label").
-    //  Set to false if you want to call ImGui::Begin/End yourself
     bool callBeginEnd = true;
-
-    // `includeInViewMenu`: _bool, default=true_.
-    //  Flag that indicates whether this window should be mentioned in the view menu.
     bool includeInViewMenu = true;
-
-    // `imGuiWindowFlags`: _ImGuiWindowFlags, default=0_.
-    //  Window flags, see enum ImGuiWindowFlags_
     ImGuiWindowFlags imGuiWindowFlags = 0;
-
-
-    // --------------- Focus window -----------------------------
-
-    // `focusWindowAtNextFrame`: _bool, default = false_.
-    //  If set to true this window will be focused at the next frame.
     bool focusWindowAtNextFrame = false;
-
-
-    // --------------- Size & Position --------------------------
-    //              (only if not docked)
-
-    // `windowSize`: _ImVec2, default=(0.f, 0.f) (i.e let the app decide)_.
-    //  Window size (unused if docked)
     ImVec2 windowSize = ImVec2(0.f, 0.f);
-
-    // `windowSizeCondition`: _ImGuiCond, default=ImGuiCond_FirstUseEver_.
-    //  When to apply the window size.
-    ImGuiCond  windowSizeCondition = ImGuiCond_FirstUseEver;
-
-    // `windowPos`: _ImVec2, default=(0.f, 0.f) (i.e let the app decide)_.
-    //  Window position (unused if docked)
+    ImGuiCond windowSizeCondition = ImGuiCond_FirstUseEver;
     ImVec2 windowPosition = ImVec2(0.f, 0.f);
-
-    // `windowPosCondition`: _ImGuiCond, default=ImGuiCond_FirstUseEver_.
-    //  When to apply the window position.
-    ImGuiCond  windowPositionCondition = ImGuiCond_FirstUseEver;
-
-    // `dockingParams`: _DockingParams_.
-    // DockableWindows can also be dockspaces themselves.
+    ImGuiCond windowPositionCondition = ImGuiCond_FirstUseEver;
     DockingParams dockingParams = {};
-
-    // `state`: _DockableWindowAdditionState, default=Waiting_.
-    //  State of the DockableWindow. Having this here allows us to conditionally call GuiFunction
-    //  only after the window has been added to ImGui.
     DockableWindowAdditionState state = DockableWindowAdditionState::Waiting;
-
-
-    // --------------- Constructor ------------------------------
-    // Constructor
-    DockableWindow(
-        const std::string & label_ = "",
-        const DockSpaceName & dockSpaceName_ = "",
-        const VoidFunction guiFunction_ = EmptyVoidFunction(),
-        bool isVisible_ = true,
-        bool canBeClosed_ = true)
-        : label(label_), dockSpaceName(dockSpaceName_),
-          GuiFunction(guiFunction_),
-          isVisible(isVisible_),
-          canBeClosed(canBeClosed_) {}
-    
-    DockableWindow(const DockableWindow& other) = default;
-    DockableWindow& operator=(const DockableWindow& other) = default;
-
 };
 // @@md
 

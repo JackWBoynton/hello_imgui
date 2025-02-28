@@ -795,7 +795,6 @@ namespace AddDockableWindowHelper
                         else
                         {
                             fprintf(stderr, "DockableWindow %s: dockSpaceName %s not found\n", dockableWindow.dockableWindow->label.c_str(), dockableWindow.dockableWindow->dockSpaceName.c_str());
-                            assert(false);
                         }
                     }
                 } else {
@@ -811,6 +810,7 @@ namespace AddDockableWindowHelper
         if (dockableWindow->dockSpaceName == "MainDockSpace")
         {
             dockableWindows.push_back(dockableWindow);
+            printf("DockableWindow %s: added to MainDockSpace\n", dockableWindow->label.c_str());
             return true;
         }
 
