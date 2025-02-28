@@ -1139,6 +1139,9 @@ endfunction()
 # Add nlohmann_json: API = him_add_nlohmann_json
 ###################################################################################################
 function(him_add_nlohmann_json)
+    if (TARGET nlohmann_json)
+        return()
+    endif()
     find_package(nlohmann_json CONFIG QUIET)
     if(nlohmann_json_FOUND)
         message(STATUS "HelloImGui: using nlohmann_json from find_package(nlohmann_json)")
