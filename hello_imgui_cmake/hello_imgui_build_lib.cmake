@@ -452,7 +452,7 @@ function(_him_add_freetype_to_imgui)
     if(NOT TARGET lunasvg)
         # Try using lunasvg unofficial package from vcpkg
         find_package(unofficial-lunasvg CONFIG QUIET)
-        find_package(lunasvg QUIET)
+        find_package(lunasvg CONFIG QUIET)
         if(unofficial-lunasvg_FOUND)
             target_link_libraries(imgui PRIVATE unofficial::lunasvg::lunasvg)
         elseif (lunasvg_FOUND)
