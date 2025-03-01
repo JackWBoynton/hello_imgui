@@ -452,28 +452,35 @@ function(_him_add_freetype_to_imgui)
     if(NOT TARGET lunasvg)
         # Try using lunasvg unofficial package from vcpkg
         find_package(unofficial-lunasvg CONFIG QUIET)
+        find_package(lunasvg config QUIET)
         if(unofficial-lunasvg_FOUND)
             target_link_libraries(imgui PRIVATE unofficial::lunasvg::lunasvg)
-        elseif(NOT HELLOIMGUI_FETCH_FORBIDDEN)
-            set(backup_shared_lib ${BUILD_SHARED_LIBS})
-            set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-            include(FetchContent)
-            FetchContent_Declare(lunasvg
-                GIT_REPOSITORY https://github.com/sammycage/lunasvg
-                GIT_TAG        v2.3.9
-                GIT_PROGRESS TRUE
-            )
-            FetchContent_MakeAvailable(lunasvg)
-            set(BUILD_SHARED_LIBS ${backup_shared_lib} CACHE BOOL "" FORCE)
-            target_link_libraries(imgui PUBLIC lunasvg)
-            get_target_property(lunasvg_include_dirs lunasvg INTERFACE_INCLUDE_DIRECTORIES)
-            # Patch lunasvg include dir, for installable version (CMake install shenanigans)
-            set_target_properties(lunasvg PROPERTIES INTERFACE_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/_deps/lunasvg-src/include>)
-            get_target_property(lunasvg_include_dirs lunasvg INTERFACE_INCLUDE_DIRECTORIES)
-
-            him_add_installable_dependency(lunasvg)
-            hello_imgui_msvc_target_set_folder(lunasvg ${HELLOIMGUI_SOLUTIONFOLDER}/external)
+        elseif (lunasvg_FOUND)
+            target_link_libraries(imgui PRIVATE lunasvg::lunasvg)
+        else()
+            message(FATAL_ERROR "")
         endif()
+
+        # elseif(NOT HELLOIMGUI_FETCH_FORBIDDEN)
+        #     set(backup_shared_lib ${BUILD_SHARED_LIBS})
+        #     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+        #     include(FetchContent)
+        #     FetchContent_Declare(lunasvg
+        #         GIT_REPOSITORY https://github.com/sammycage/lunasvg
+        #         GIT_TAG        v2.3.9
+        #         GIT_PROGRESS TRUE
+        #     )
+        #     FetchContent_MakeAvailable(lunasvg)
+        #     set(BUILD_SHARED_LIBS ${backup_shared_lib} CACHE BOOL "" FORCE)
+        #     target_link_libraries(imgui PUBLIC lunasvg)
+        #     get_target_property(lunasvg_include_dirs lunasvg INTERFACE_INCLUDE_DIRECTORIES)
+        #     # Patch lunasvg include dir, for installable version (CMake install shenanigans)
+        #     set_target_properties(lunasvg PROPERTIES INTERFACE_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/_deps/lunasvg-src/include>)
+        #     get_target_property(lunasvg_include_dirs lunasvg INTERFACE_INCLUDE_DIRECTORIES)
+
+        #     him_add_installable_dependency(lunasvg)
+        #     hello_imgui_msvc_target_set_folder(lunasvg ${HELLOIMGUI_SOLUTIONFOLDER}/external)
+        # endif()
     endif()
 
     #
