@@ -1,5 +1,7 @@
 #ifndef __EMSCRIPTEN__
 
+#include <cstdlib>
+
 #include "hello_imgui/internal/whereami/whereami.h"
 #include "hello_imgui/internal/whereami/whereami_cpp.h"
 
