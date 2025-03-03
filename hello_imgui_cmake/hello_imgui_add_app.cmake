@@ -50,6 +50,7 @@ function(hello_imgui_add_app)
              sources=${app_sources}
              assets_location=${assets_location}
     ")
+    message(FATAL_ERROR "ASDFASDFASDF")
 
     #############################################################################
     # If windows, and if the user wants to, we can make this an app without console
