@@ -86,6 +86,7 @@ endfunction()
 # But it can be overriden by platform specific implementations, in the following files:
 if(APPLE)
     include(${CMAKE_CURRENT_LIST_DIR}/apple/hello_imgui_apple.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/apple/hello_imgui_macos.cmake)
 elseif(ANDROID)
     include(${CMAKE_CURRENT_LIST_DIR}/android/hello_imgui_android.cmake)  # almost empty
     include(${CMAKE_CURRENT_LIST_DIR}/android/apkCMake/apkCMake.cmake)    # most of the logic is here and called by hello_imgui_prepare_app()
