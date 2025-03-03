@@ -272,12 +272,14 @@ void DemoShowAdditionalWindow(AppState& appState)
     const char* windowName = "Additional Window";
     if (ImGui::Button("Show additional window"))
     {
-        static HelloImGui::DockableWindow additionalWindow;
-        additionalWindow.label = "Additional Window";
-        additionalWindow.includeInViewMenu = false;       // this window is not shown in the view menu,
-        additionalWindow.rememberIsVisible = false;       // its visibility is not saved in the settings file,
-        additionalWindow.dockSpaceName = "MiscSpace";     // when shown, it will appear in MiscSpace.
-        additionalWindow.GuiFunction = [] { ImGui::Text("This is the additional window"); };
+        static HelloImGui::DockableWindow additionalWindow{
+            .label = windowName,
+            .includeInViewMenu = false,
+            .rememberIsVisible = false,
+            .dockSpaceName = "MiscSpace",
+            .GuiFunction = [] { ImGui::Text("This is the additional window"); }
+        };
+
         HelloImGui::AddDockableWindow(
             &additionalWindow,
             false  // forceDockspace=false: means that the window will be docked to the last space it was docked to
