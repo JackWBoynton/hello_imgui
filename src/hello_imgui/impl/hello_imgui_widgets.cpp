@@ -237,7 +237,7 @@ namespace HelloImGui
     {
         nlohmann::json j = nlohmann::json::parse(str);
         InputTextData result;
-        result.Text = j["Text"];
+        result.Text = j["Text"].get<std::string>();
         result.Multiline = j["Multiline"];
         result.SizeEm.x = j["SizeEm_x"];
         result.SizeEm.y = j["SizeEm_y"];
