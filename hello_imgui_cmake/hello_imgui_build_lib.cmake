@@ -243,6 +243,10 @@ function(him_add_hello_imgui)
     if (HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE)
         find_package(imgui CONFIG REQUIRED)
         target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC imgui::imgui)
+        get_target_property(IMGUI_INCLUDES imgui::imgui INTERFACE_INCLUDE_DIRECTORIES)
+        target_include_directories(${HELLOIMGUI_TARGET} PUBLIC
+            ${IMGUI_INCLUDES}
+        )
     else()
         target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC imgui)
     endif()
