@@ -1146,6 +1146,7 @@ endfunction()
 ###################################################################################################
 function(him_add_nlohmann_json)
     if (TARGET nlohmann_json)
+        target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC nlohmann_json)
         return()
     endif()
     find_package(nlohmann_json CONFIG QUIET)
