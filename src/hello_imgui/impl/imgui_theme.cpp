@@ -5,6 +5,7 @@
 // Some themes were adapted by themes posted by ImGui users at https://github.com/ocornut/imgui/issues/707
 //
 #include "hello_imgui/imgui_theme.h"
+#include "imgui.h"
 #include <stack>
 #include <string>
 
@@ -1149,13 +1150,132 @@ namespace ThemesImpl
         return style;
     }
 
+    static ImVec4 JackConvert(const ImVec4& color)
+    {
+        return ImVec4(color.x / 255.f, color.y / 255.f, color.z / 255.f, color.w / 255.f);
+    }
+
     ImGuiStyle JackTest()
     {
+        // ImGuiStyle style;
+        // // ImGui::StyleColorsDark(&style);
+
+        // style.WindowRounding = 0;
+        // style.WindowBorderSize = 2.0;
+        // style.TabBarBorderSize = 1.0;
+        // // Padding of the window headers / title bars
+        // style.FramePadding.y = 8.0;
+        // style.WindowMinSize = ImVec2{200.0, 200.0};
+        // style.AntiAliasedLines = true;
+
+        // style.Colors[ImGuiCol_TabSelected] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_TabUnfocused] = JackConvert(ImVec4{23, 26, 32, 255});
+        // style.Colors[ImGuiCol_TabDimmedSelectedOverline] = JackConvert(ImVec4{23, 26, 32, 255});
+        // style.Colors[ImGuiCol_TabSelectedOverline] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_TabUnfocusedActive] = JackConvert(ImVec4{23, 26, 32, 255});
+        // style.Colors[ImGuiCol_TabHovered] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_HeaderHovered] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_DockingPreview] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_SeparatorActive] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_SeparatorHovered] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_TitleBgActive] = JackConvert(ImVec4{23, 26, 32, 255});
+        // style.Colors[ImGuiCol_TitleBg] = JackConvert(ImVec4{23, 26, 32, 255});
+        // style.Colors[ImGuiCol_DockingEmptyBg] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_ResizeGrip] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_ResizeGripHovered] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_ResizeGripActive] = JackConvert(ImVec4{255, 183, 77, 255});
+        // style.Colors[ImGuiCol_WindowBg] = JackConvert(ImVec4{23, 26, 32, 255});
+        // style.Colors[ImGuiCol_Border] = JackConvert(ImVec4{12, 14, 17, 255});
+        // style.Colors[ImGuiCol_MenuBarBg] = JackConvert(ImVec4{23, 26, 32, 255});
+
+        // return style;
+
         ImGuiStyle style;
-        style.WindowRounding = 10;
-        style.WindowBorderSize = 0.0f;  // Disable ImGui's window border
-        ImGui::StyleColorsDark(&style);
-        return style;
+        ImVec4* colors = style.Colors;
+
+        // Approximate Gruvbox palette
+        ImVec4 bg0    = ImColor(0x28, 0x28, 0x28);
+        ImVec4 bg1    = ImColor(0x3c, 0x38, 0x36);
+        ImVec4 bg2    = ImColor(0x50, 0x49, 0x45);
+        ImVec4 fg     = ImColor(0xeb, 0xdb, 0xb2);
+        ImVec4 gray   = ImColor(0x92, 0x83, 0x74);
+        ImVec4 green  = ImColor(0xb8, 0xbb, 0x26);
+        ImVec4 red    = ImColor(0xfb, 0x49, 0x34);
+        ImVec4 aqua   = ImColor(0x8e, 0xc0, 0x7c);
+    
+        // Basic text/ bg
+        colors[ImGuiCol_Text]                   = fg;
+        colors[ImGuiCol_WindowBg]               = bg0;
+        colors[ImGuiCol_ChildBg]                = bg0;
+        colors[ImGuiCol_PopupBg]                = bg1;
+        colors[ImGuiCol_Border]                 = gray;
+        colors[ImGuiCol_BorderShadow]           = bg0;
+    
+        // Frame / widget backgrounds
+        colors[ImGuiCol_FrameBg]                = bg1;
+        colors[ImGuiCol_FrameBgHovered]         = bg2;
+        colors[ImGuiCol_FrameBgActive]          = bg2;
+        colors[ImGuiCol_TitleBg]                = bg1;
+        colors[ImGuiCol_TitleBgActive]          = bg2;
+        colors[ImGuiCol_TitleBgCollapsed]       = bg1;
+    
+        // Scrollbars
+        colors[ImGuiCol_ScrollbarBg]            = bg1;
+        colors[ImGuiCol_ScrollbarGrab]          = gray;
+        colors[ImGuiCol_ScrollbarGrabHovered]   = fg;
+        colors[ImGuiCol_ScrollbarGrabActive]    = fg;
+    
+        // Check mark, sliders, etc.
+        colors[ImGuiCol_CheckMark]              = aqua;
+        colors[ImGuiCol_SliderGrab]             = aqua;
+        colors[ImGuiCol_SliderGrabActive]       = aqua;
+    
+        // Buttons
+        colors[ImGuiCol_Button]                 = bg1;
+        colors[ImGuiCol_ButtonHovered]          = bg2;
+        colors[ImGuiCol_ButtonActive]           = bg2;
+    
+        // Headers (for tables, collapsing headers, etc.)
+        colors[ImGuiCol_Header]                 = bg2;
+        colors[ImGuiCol_HeaderHovered]          = bg2;
+        colors[ImGuiCol_HeaderActive]           = bg2;
+    
+        // Tabs
+        colors[ImGuiCol_Tab]                    = bg1;
+        colors[ImGuiCol_TabHovered]             = bg2;
+        colors[ImGuiCol_TabActive]              = bg2;
+        colors[ImGuiCol_TabUnfocused]           = bg1;
+        colors[ImGuiCol_TabUnfocusedActive]     = bg2;
+    
+        // Resize grips
+        colors[ImGuiCol_ResizeGrip]             = gray;
+        colors[ImGuiCol_ResizeGripHovered]      = fg;
+        colors[ImGuiCol_ResizeGripActive]       = fg;
+    
+        // Separator
+        colors[ImGuiCol_Separator]              = gray;
+        colors[ImGuiCol_SeparatorHovered]       = fg;
+        colors[ImGuiCol_SeparatorActive]        = fg;
+    
+        // Rounding for a smoother look
+        style.FrameRounding = 3.0f;
+        style.WindowRounding = 4.0f;
+        style.ChildRounding = 3.0f;
+        style.PopupRounding = 3.0f;
+        style.GrabRounding = 3.0f;
+        style.TabRounding = 3.0f;
+    
+        // Optional: tweak padding/spacing
+        style.WindowPadding = ImVec2(8, 8);
+        style.FramePadding  = ImVec2(5, 5);
+        style.ItemSpacing   = ImVec2(6, 5);
+
+        style.ScrollbarSize = 10.0f;
+        style.GrabMinSize = 12.0f;
+
+        style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
+        style.SeparatorTextAlign = ImVec2(0.5f, 0.5f);
+    return style;
     }
 
 }  // namespace ThemesImpl

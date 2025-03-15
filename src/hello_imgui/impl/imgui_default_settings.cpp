@@ -16,9 +16,9 @@ void LoadDefaultFont_WithFontAwesomeIcons()
 {
 	auto runnerParams = HelloImGui::GetRunnerParams();
     auto defaultIconFont = runnerParams->callbacks.defaultIconFont;
-    float fontSize = 15.f;
+    float fontSize = 18.f;
 
-    std::string fontFilename = "fonts/DroidSans.ttf";
+    std::string fontFilename = "fonts/jetbrains.ttf";
 
     if ( ! HelloImGui::AssetExists(fontFilename))
     {
