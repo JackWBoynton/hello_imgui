@@ -134,7 +134,7 @@ namespace DockingDetails
             DoSplit(dockingSplit);
     }
 
-    void ApplyWindowDockingLocations(const std::vector<DockableWindow*>& dockableWindows)
+    void ApplyWindowDockingLocations(const std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
     {
         for (const auto& dockableWindow : dockableWindows)
         {
@@ -203,7 +203,7 @@ namespace DockingDetails
         ImGui::PopID();
     }
 
-    void RenderDockableWindowViews(std::vector<DockableWindow*>& dockableWindows)
+    void RenderDockableWindowViews(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
     {
         for (auto& dockableWindow : dockableWindows)
         {
@@ -302,7 +302,7 @@ namespace DockingDetails
         }
     }
 
-    void ImplProviderNestedDockspace(const DockableWindow* dockableWindow)
+    void ImplProviderNestedDockspace(const std::shared_ptr<DockableWindow>& dockableWindow)
     {
         ImGuiID dockSpaceId = ImGui::GetID(dockableWindow->label.c_str());
         SplitIdsHelper::SetSplitId(dockableWindow->label, dockSpaceId);
@@ -314,7 +314,8 @@ namespace DockingDetails
     {
         dockingParams.layoutReset = layoutReset;
         for (auto& dockableWindow : dockingParams.dockableWindows)
-            PropagateLayoutReset(dockableWindow->dockingParams, layoutReset);
+            if (dockableWindow)
+                PropagateLayoutReset(dockableWindow->dockingParams, layoutReset);
     }
 
     static void SplitAndApplyDockingLocations(DockingParams& dockingParams, const char* dockSpaceName)
@@ -352,7 +353,7 @@ namespace DockingDetails
         }
     }
 
-    void ShowDockableWindows(std::vector<DockableWindow*>& dockableWindows)
+    void ShowDockableWindows(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
     {
         bool wereAllDockableWindowsInited = (ImGui::GetFrameCount() > 1);
 
@@ -708,29 +709,28 @@ namespace DockingDetails
 
 }  // namespace DockingDetails
 
-static DockableWindow* GetDockableWindowRec(const std::string& label,
-                                            std::vector<DockableWindow*>& dockableWindows)
+static std::shared_ptr<DockableWindow> GetDockableWindowRec(
+    const std::string& label, std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
 {
     for (auto& dockableWindow : dockableWindows)
     {
         if (dockableWindow->label == label)
             return dockableWindow;
-        DockableWindow* dockableWindowRec =
-            GetDockableWindowRec(label, dockableWindow->dockingParams.dockableWindows);
-        if (dockableWindowRec != nullptr)
+        auto dockableWindowRec = GetDockableWindowRec(label, dockableWindow->dockingParams.dockableWindows);
+        if (dockableWindowRec)
             return dockableWindowRec;
     }
     return nullptr;
 }
 
-DockableWindow* DockingParams::dockableWindowOfName(const std::string& name)
+std::shared_ptr<DockableWindow> DockingParams::dockableWindowOfName(const std::string& name)
 {
     return GetDockableWindowRec(name, dockableWindows);
 }
 
 bool DockingParams::focusDockableWindow(const std::string& windowName)
 {
-    DockableWindow* win = dockableWindowOfName(windowName);
+    auto win = dockableWindowOfName(windowName);
     if (win != nullptr)
     {
         win->focusWindowAtNextFrame = true;
@@ -762,14 +762,14 @@ namespace AddDockableWindowHelper
 
     struct DockableWindowWaitingForAddition
     {
-        DockableWindow* dockableWindow;
+        std::shared_ptr<DockableWindow> dockableWindow;
         bool forceDockspace;
     };
 
     std::vector<DockableWindowWaitingForAddition> gDockableWindowsToAdd;
     std::vector<std::string> gDockableWindowsToRemove;
 
-    void AddDockableWindow(DockableWindow* dockableWindow, bool forceDockspace)
+    void AddDockableWindow(std::shared_ptr<DockableWindow> dockableWindow, bool forceDockspace)
     {
         assert(dockableWindow->label != "");
         gDockableWindowsToAdd.push_back({dockableWindow, forceDockspace});
@@ -830,15 +830,14 @@ namespace AddDockableWindowHelper
         }
     }
 
-    static bool InsertDockableWindow(DockableWindow* dockableWindow,
-                                     std::vector<DockableWindow*>& dockableWindows)
+    static bool InsertDockableWindow(std::shared_ptr<DockableWindow> dockableWindow,
+                                     std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
     {
         // find the correct place to insert the dockable window, searching through the recursive dockable
         // windows to find the correct dockspace
         if (dockableWindow->dockSpaceName == "MainDockSpace")
         {
-            dockableWindows.push_back(dockableWindow);
-            printf("DockableWindow %s: added to MainDockSpace\n", dockableWindow->label.c_str());
+            dockableWindows.push_back(std::move(dockableWindow));
             return true;
         }
 
@@ -846,7 +845,7 @@ namespace AddDockableWindowHelper
         {
             if (dockableWindowInList->label == dockableWindow->dockSpaceName)
             {
-                dockableWindowInList->dockingParams.dockableWindows.push_back(dockableWindow);
+                dockableWindowInList->dockingParams.dockableWindows.push_back(std::move(dockableWindow));
                 return true;
             }
         }
@@ -866,7 +865,7 @@ namespace AddDockableWindowHelper
             {
                 if (dockingSplit.newDock == dockableWindow->dockSpaceName)
                 {
-                    dockableWindowInList->dockingParams.dockableWindows.push_back(dockableWindow);
+                    dockableWindowInList->dockingParams.dockableWindows.push_back(std::move(dockableWindow));
                     return true;
                 }
             }
@@ -875,13 +874,12 @@ namespace AddDockableWindowHelper
         return false;
     }
 
-    static void CleanupNullDockableWindows(std::vector<DockableWindow*>& dockableWindows)
+    static void CleanupNullDockableWindows(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
     {
-        dockableWindows.erase(
-            std::remove_if(dockableWindows.begin(),
-                           dockableWindows.end(),
-                           [](DockableWindow* dockableWindow) { return dockableWindow == nullptr; }),
-            dockableWindows.end());
+        dockableWindows.erase(std::remove_if(dockableWindows.begin(),
+                                             dockableWindows.end(),
+                                             [](auto& dockableWindow) { return dockableWindow == nullptr; }),
+                              dockableWindows.end());
 
         for (auto& dockableWindow : dockableWindows)
             CleanupNullDockableWindows(dockableWindow->dockingParams.dockableWindows);
@@ -927,7 +925,7 @@ namespace AddDockableWindowHelper
         {
             dockableWindows.erase(std::remove_if(dockableWindows.begin(),
                                                  dockableWindows.end(),
-                                                 [&dockableWindowName](DockableWindow* dockableWindow)
+                                                 [&dockableWindowName](auto& dockableWindow)
                                                  { return dockableWindow->label == dockableWindowName; }),
                                   dockableWindows.end());
         }
@@ -939,7 +937,7 @@ namespace AddDockableWindowHelper
 
 }  // namespace AddDockableWindowHelper
 
-void AddDockableWindow(DockableWindow* dockableWindow, bool forceDockspace)
+void AddDockableWindow(std::shared_ptr<DockableWindow> dockableWindow, bool forceDockspace)
 {
     assert(dockableWindow != nullptr);
     assert(dockableWindow->label != "");

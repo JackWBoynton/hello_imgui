@@ -16,8 +16,8 @@ namespace DockingDetails
     void ProvideWindowOrDock(RunnerParams& runnerParams);
     void CloseWindowOrDock(ImGuiWindowParams& imGuiWindowParams);
     void ShowViewMenu(RunnerParams& runnerParams);
-    void ShowDockableWindows(std::vector<DockableWindow*>& dockableWindows);
-    void RenderDockableWindowViews(std::vector<DockableWindow*>& dockableWindows);
+    void ShowDockableWindows(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows);
+    void RenderDockableWindowViews(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows);
 }  // namespace DockingDetails
 
 }  // namespace HelloImGui
