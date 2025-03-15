@@ -2,6 +2,7 @@
 #include "hello_imgui/runner_callbacks.h"
 #include "imgui.h"
 #include <functional>
+#include <memory>
 #include <optional>
 #include <stdio.h>
 #include <string>
