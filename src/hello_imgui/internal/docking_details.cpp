@@ -357,6 +357,9 @@ namespace DockingDetails
     {
         bool wereAllDockableWindowsInited = (ImGui::GetFrameCount() > 1);
 
+        // remove windows who want to be
+        std::erase_if(dockableWindows, [](const auto& dockableWindow) { return dockableWindow->wantsClose; });
+
         for (auto& dockableWindow : dockableWindows)
         {
             if (dockableWindow->state != DockableWindowAdditionState::AddedToHelloImGui)
