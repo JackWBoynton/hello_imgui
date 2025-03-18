@@ -12,6 +12,12 @@
 #include <optional>
 #include <vector>
 
+#include <algorithm>
+#include <numeric>
+
+#include <memory>
+#include <ranges>
+
 namespace HelloImGui
 {
 // From hello_imgui.cpp
@@ -205,41 +211,139 @@ namespace DockingDetails
 
     void RenderDockableWindowViews(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
     {
-        for (auto& dockableWindow : dockableWindows)
+        bool shift_mod = ImGui::GetIO().KeyShift;
+
+        if (shift_mod)
         {
-            if (!dockableWindow->includeInViewMenu)
-                continue;
+            auto filtered =
+                dockableWindows | std::views::filter([](auto const& win) { return win->includeInViewMenu; });
+            std::vector<std::shared_ptr<DockableWindow>> sorted(filtered.begin(), filtered.end());
+            std::ranges::sort(sorted, [](auto const& a, auto const& b) { return a->label < b->label; });
 
-            if (dockableWindow->customViewMenu)
+            for (auto& win : sorted)
             {
-                dockableWindow->customViewMenu();
-                continue;
-            }
-
-            // if we are a dockspace
-            if (!dockableWindow->dockingParams.dockableWindows.empty() &&
-                !ImGui::IsKeyDown(ImGuiKey_ModShift) && dockableWindow->isVisible)
-            {
-                if (ImGui::BeginMenu(dockableWindow->label.c_str()))
+                if (win->customViewMenu)
                 {
-                    RenderDockableWindowViews(dockableWindow->dockingParams.dockableWindows);
-                    ImGui::EndMenu();
+                    win->customViewMenu();
+                    continue;
                 }
-
-                // plain window
-            }
-            else
-            {
-                if (dockableWindow->canBeClosed)
+                if (!win->dockingParams.dockableWindows.empty() && win->isVisible)
                 {
-                    if (ImGui::MenuItem(dockableWindow->label.c_str(), nullptr, dockableWindow->isVisible))
-                        dockableWindow->isVisible = !dockableWindow->isVisible;
+                    if (ImGui::BeginMenu(win->label.c_str()))
+                    {
+                        RenderDockableWindowViews(win->dockingParams.dockableWindows);
+                        ImGui::EndMenu();
+                    }
                 }
                 else
                 {
-                    ImGui::MenuItem(dockableWindow->label.c_str(), nullptr, dockableWindow->isVisible, false);
+                    if (win->canBeClosed)
+                    {
+                        if (ImGui::MenuItem(win->label.c_str(), nullptr, win->isVisible))
+                            win->isVisible = !win->isVisible;
+                    }
+                    else
+                    {
+                        ImGui::MenuItem(win->label.c_str(), nullptr, win->isVisible, false);
+                    }
                 }
             }
+        }
+        else
+        {
+            auto filtered =
+                dockableWindows | std::views::filter([](auto const& win) { return win->includeInViewMenu; });
+            std::vector<std::shared_ptr<DockableWindow>> windows(filtered.begin(), filtered.end());
+            std::ranges::sort(windows,
+                              [](auto const& a, auto const& b)
+                              {
+                                  if (a->category == b->category)
+                                      return a->label < b->label;
+                                  return a->category < b->category;
+                              });
+
+            std::string currentCategory;
+            std::vector<std::shared_ptr<DockableWindow>> categoryGroup;
+
+            auto flushCategoryGroup = [&]()
+            {
+                if (!categoryGroup.empty() && !currentCategory.empty())
+                {
+                    if (ImGui::BeginMenu(currentCategory.c_str()))
+                    {
+                        for (auto& win : categoryGroup)
+                        {
+                            if (win->customViewMenu)
+                            {
+                                win->customViewMenu();
+                            }
+                            else if (!win->dockingParams.dockableWindows.empty() && win->isVisible)
+                            {
+                                if (ImGui::BeginMenu(win->label.c_str()))
+                                {
+                                    RenderDockableWindowViews(win->dockingParams.dockableWindows);
+                                    ImGui::EndMenu();
+                                }
+                            }
+                            else
+                            {
+                                if (win->canBeClosed)
+                                {
+                                    if (ImGui::MenuItem(win->label.c_str(), nullptr, win->isVisible))
+                                        win->isVisible = !win->isVisible;
+                                }
+                                else
+                                {
+                                    ImGui::MenuItem(win->label.c_str(), nullptr, win->isVisible, false);
+                                }
+                            }
+                        }
+                        ImGui::EndMenu();
+                    }
+                    categoryGroup.clear();
+                }
+                else
+                {
+                    for (auto& win : categoryGroup)
+                    {
+                        if (win->customViewMenu)
+                        {
+                            win->customViewMenu();
+                        }
+                        else if (!win->dockingParams.dockableWindows.empty() && win->isVisible)
+                        {
+                            if (ImGui::BeginMenu(win->label.c_str()))
+                            {
+                                RenderDockableWindowViews(win->dockingParams.dockableWindows);
+                                ImGui::EndMenu();
+                            }
+                        }
+                        else
+                        {
+                            if (win->canBeClosed)
+                            {
+                                if (ImGui::MenuItem(win->label.c_str(), nullptr, win->isVisible))
+                                    win->isVisible = !win->isVisible;
+                            }
+                            else
+                            {
+                                ImGui::MenuItem(win->label.c_str(), nullptr, win->isVisible, false);
+                            }
+                        }
+                    }
+                }
+            };
+
+            for (auto& win : windows)
+            {
+                if (currentCategory != win->category)
+                {
+                    flushCategoryGroup();
+                    currentCategory = win->category;
+                }
+                categoryGroup.push_back(win);
+            }
+            flushCategoryGroup();
         }
     }
 
@@ -390,6 +494,16 @@ namespace DockingDetails
                     else
                         not_collapsed = ImGui::Begin(
                             dockableWindow->label.c_str(), nullptr, dockableWindow->imGuiWindowFlags);
+
+                    // window rename
+                    if (not_collapsed)
+                        if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight))
+                        {
+                            if (dockableWindow->customTitleBarContextFunction)
+                                dockableWindow->customTitleBarContextFunction(dockableWindow);
+                            ImGui::EndPopup();
+                        }
+
                     if (not_collapsed && dockableWindow->GuiFunction)
                         dockableWindow->GuiFunction();
                     if (!dockableWindow->dockingParams.dockingSplits.empty())
@@ -836,6 +950,7 @@ namespace AddDockableWindowHelper
     static bool InsertDockableWindow(std::shared_ptr<DockableWindow> dockableWindow,
                                      std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
     {
+        assert(dockableWindow != nullptr);
         // find the correct place to insert the dockable window, searching through the recursive dockable
         // windows to find the correct dockspace
         if (dockableWindow->dockSpaceName == "MainDockSpace")
@@ -898,10 +1013,6 @@ namespace AddDockableWindowHelper
                 if (!InsertDockableWindow(dockableWindow.dockableWindow,
                                           HelloImGui::GetRunnerParams()->dockingParams.dockableWindows))
                 {
-                    fprintf(stderr,
-                            "DockableWindow CB2 %s: dockSpaceName %s not found\n",
-                            dockableWindow.dockableWindow->label.c_str(),
-                            dockableWindow.dockableWindow->dockSpaceName.c_str());
                     // Add to the base
                     HelloImGui::GetRunnerParams()->dockingParams.dockableWindows.push_back(
                         dockableWindow.dockableWindow);
@@ -953,3 +1064,64 @@ void RemoveDockableWindow(const std::string& dockableWindowName)
 }
 
 }  // namespace HelloImGui
+
+namespace ImGui
+{
+auto UpdateStringSizeCallback(ImGuiInputTextCallbackData* data) -> int
+{
+    if (data->EventFlag == ImGuiInputTextFlags_CallbackResize)
+    {
+        auto& string = *static_cast<std::string*>(data->UserData);
+
+        string.resize(data->BufTextLen);
+        data->Buf = string.data();
+    }
+
+    return 0;
+}
+
+auto InputText(char const* label, std::u8string& buffer, ImGuiInputTextFlags flags) -> bool
+{
+    return ImGui::InputText(label,
+                            reinterpret_cast<char*>(buffer.data()),
+                            buffer.size() + 1,
+                            ImGuiInputTextFlags_CallbackResize | flags,
+                            UpdateStringSizeCallback,
+                            &buffer);
+}
+
+auto InputText(char const* label, std::string& buffer, ImGuiInputTextFlags flags) -> bool
+{
+    return ImGui::InputText(label,
+                            buffer.data(),
+                            buffer.size() + 1,
+                            ImGuiInputTextFlags_CallbackResize | flags,
+                            UpdateStringSizeCallback,
+                            &buffer);
+}
+
+auto InputTextMultiline(char const* label, std::string& buffer, ImVec2 const& size, ImGuiInputTextFlags flags)
+    -> bool
+{
+    return ImGui::InputTextMultiline(label,
+                                     buffer.data(),
+                                     buffer.size() + 1,
+                                     size,
+                                     ImGuiInputTextFlags_CallbackResize | flags,
+                                     UpdateStringSizeCallback,
+                                     &buffer);
+}
+
+auto InputTextWithHint(char const* label, char const* hint, std::string& buffer, ImGuiInputTextFlags flags)
+    -> bool
+{
+    return ImGui::InputTextWithHint(label,
+                                    hint,
+                                    buffer.data(),
+                                    buffer.size() + 1,
+                                    ImGuiInputTextFlags_CallbackResize | flags,
+                                    UpdateStringSizeCallback,
+                                    &buffer);
+}
+
+}  // namespace ImGui

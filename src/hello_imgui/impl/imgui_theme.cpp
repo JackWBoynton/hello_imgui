@@ -1191,72 +1191,73 @@ namespace ThemesImpl
         // return style;
 
         ImGuiStyle style;
+        ImGui::StyleColorsDark(&style);
         ImVec4* colors = style.Colors;
 
         // Approximate Gruvbox palette
-        ImVec4 bg0    = ImColor(0x28, 0x28, 0x28);
-        ImVec4 bg1    = ImColor(0x3c, 0x38, 0x36);
-        ImVec4 bg2    = ImColor(0x50, 0x49, 0x45);
-        ImVec4 fg     = ImColor(0xeb, 0xdb, 0xb2);
-        ImVec4 gray   = ImColor(0x92, 0x83, 0x74);
-        ImVec4 green  = ImColor(0xb8, 0xbb, 0x26);
-        ImVec4 red    = ImColor(0xfb, 0x49, 0x34);
-        ImVec4 aqua   = ImColor(0x8e, 0xc0, 0x7c);
-    
+        ImVec4 bg0 = ImColor(0x28, 0x28, 0x28);
+        ImVec4 bg1 = ImColor(0x3c, 0x38, 0x36);
+        ImVec4 bg2 = ImColor(0x50, 0x49, 0x45);
+        ImVec4 fg = ImColor(0xeb, 0xdb, 0xb2);
+        ImVec4 gray = ImColor(0x92, 0x83, 0x74);
+        ImVec4 green = ImColor(0xb8, 0xbb, 0x26);
+        ImVec4 red = ImColor(0xfb, 0x49, 0x34);
+        ImVec4 aqua = ImColor(0x8e, 0xc0, 0x7c);
+
         // Basic text/ bg
-        colors[ImGuiCol_Text]                   = fg;
-        colors[ImGuiCol_WindowBg]               = bg0;
-        colors[ImGuiCol_ChildBg]                = bg0;
-        colors[ImGuiCol_PopupBg]                = bg1;
-        colors[ImGuiCol_Border]                 = gray;
-        colors[ImGuiCol_BorderShadow]           = bg0;
-    
+        colors[ImGuiCol_Text] = fg;
+        colors[ImGuiCol_WindowBg] = bg0;
+        colors[ImGuiCol_ChildBg] = bg0;
+        colors[ImGuiCol_PopupBg] = bg0;
+        colors[ImGuiCol_Border] = gray;
+        colors[ImGuiCol_BorderShadow] = bg0;
+
         // Frame / widget backgrounds
-        colors[ImGuiCol_FrameBg]                = bg1;
-        colors[ImGuiCol_FrameBgHovered]         = bg2;
-        colors[ImGuiCol_FrameBgActive]          = bg2;
-        colors[ImGuiCol_TitleBg]                = bg1;
-        colors[ImGuiCol_TitleBgActive]          = bg2;
-        colors[ImGuiCol_TitleBgCollapsed]       = bg1;
-    
+        colors[ImGuiCol_FrameBg] = bg1;
+        colors[ImGuiCol_FrameBgHovered] = bg2;
+        colors[ImGuiCol_FrameBgActive] = bg2;
+        colors[ImGuiCol_TitleBg] = bg1;
+        colors[ImGuiCol_TitleBgActive] = bg2;
+        colors[ImGuiCol_TitleBgCollapsed] = bg1;
+
         // Scrollbars
-        colors[ImGuiCol_ScrollbarBg]            = bg1;
-        colors[ImGuiCol_ScrollbarGrab]          = gray;
-        colors[ImGuiCol_ScrollbarGrabHovered]   = fg;
-        colors[ImGuiCol_ScrollbarGrabActive]    = fg;
-    
+        colors[ImGuiCol_ScrollbarBg] = bg1;
+        colors[ImGuiCol_ScrollbarGrab] = gray;
+        colors[ImGuiCol_ScrollbarGrabHovered] = fg;
+        colors[ImGuiCol_ScrollbarGrabActive] = fg;
+
         // Check mark, sliders, etc.
-        colors[ImGuiCol_CheckMark]              = aqua;
-        colors[ImGuiCol_SliderGrab]             = aqua;
-        colors[ImGuiCol_SliderGrabActive]       = aqua;
-    
+        colors[ImGuiCol_CheckMark] = aqua;
+        colors[ImGuiCol_SliderGrab] = aqua;
+        colors[ImGuiCol_SliderGrabActive] = aqua;
+
         // Buttons
-        colors[ImGuiCol_Button]                 = bg1;
-        colors[ImGuiCol_ButtonHovered]          = bg2;
-        colors[ImGuiCol_ButtonActive]           = bg2;
-    
+        colors[ImGuiCol_Button] = bg1;
+        colors[ImGuiCol_ButtonHovered] = bg2;
+        colors[ImGuiCol_ButtonActive] = bg2;
+
         // Headers (for tables, collapsing headers, etc.)
-        colors[ImGuiCol_Header]                 = bg2;
-        colors[ImGuiCol_HeaderHovered]          = bg2;
-        colors[ImGuiCol_HeaderActive]           = bg2;
-    
+        colors[ImGuiCol_Header] = bg2;
+        colors[ImGuiCol_HeaderHovered] = bg2;
+        colors[ImGuiCol_HeaderActive] = bg2;
+
         // Tabs
-        colors[ImGuiCol_Tab]                    = bg1;
-        colors[ImGuiCol_TabHovered]             = bg2;
-        colors[ImGuiCol_TabActive]              = bg2;
-        colors[ImGuiCol_TabUnfocused]           = bg1;
-        colors[ImGuiCol_TabUnfocusedActive]     = bg2;
-    
+        colors[ImGuiCol_Tab] = bg1;
+        colors[ImGuiCol_TabHovered] = bg2;
+        colors[ImGuiCol_TabActive] = bg2;
+        colors[ImGuiCol_TabUnfocused] = bg1;
+        colors[ImGuiCol_TabUnfocusedActive] = bg2;
+
         // Resize grips
-        colors[ImGuiCol_ResizeGrip]             = gray;
-        colors[ImGuiCol_ResizeGripHovered]      = fg;
-        colors[ImGuiCol_ResizeGripActive]       = fg;
-    
+        colors[ImGuiCol_ResizeGrip] = gray;
+        colors[ImGuiCol_ResizeGripHovered] = fg;
+        colors[ImGuiCol_ResizeGripActive] = fg;
+
         // Separator
-        colors[ImGuiCol_Separator]              = gray;
-        colors[ImGuiCol_SeparatorHovered]       = fg;
-        colors[ImGuiCol_SeparatorActive]        = fg;
-    
+        colors[ImGuiCol_Separator] = gray;
+        colors[ImGuiCol_SeparatorHovered] = fg;
+        colors[ImGuiCol_SeparatorActive] = fg;
+
         // Rounding for a smoother look
         style.FrameRounding = 3.0f;
         style.WindowRounding = 4.0f;
@@ -1264,18 +1265,18 @@ namespace ThemesImpl
         style.PopupRounding = 3.0f;
         style.GrabRounding = 3.0f;
         style.TabRounding = 3.0f;
-    
+
         // Optional: tweak padding/spacing
         style.WindowPadding = ImVec2(8, 8);
-        style.FramePadding  = ImVec2(5, 5);
-        style.ItemSpacing   = ImVec2(6, 5);
+        style.FramePadding = ImVec2(5, 5);
+        style.ItemSpacing = ImVec2(6, 5);
 
         style.ScrollbarSize = 10.0f;
         style.GrabMinSize = 12.0f;
 
         style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
         style.SeparatorTextAlign = ImVec2(0.5f, 0.5f);
-    return style;
+        return style;
     }
 
 }  // namespace ThemesImpl

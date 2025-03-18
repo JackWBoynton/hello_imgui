@@ -21,3 +21,25 @@ namespace DockingDetails
 }  // namespace DockingDetails
 
 }  // namespace HelloImGui
+
+namespace ImGui
+{
+
+auto UpdateStringSizeCallback(ImGuiInputTextCallbackData* data) -> int;
+
+auto InputText(char const* label, std::string& buffer, ImGuiInputTextFlags flags = ImGuiInputTextFlags_None)
+    -> bool;
+
+auto InputText(char const* label, std::u8string& buffer, ImGuiInputTextFlags flags = ImGuiInputTextFlags_None)
+    -> bool;
+
+auto InputTextMultiline(char const* label,
+                        std::string& buffer,
+                        ImVec2 const& size,
+                        ImGuiInputTextFlags flags = ImGuiInputTextFlags_None) -> bool;
+
+auto InputTextWithHint(char const* label,
+                       char const* hint,
+                       std::string& buffer,
+                       ImGuiInputTextFlags flags = ImGuiInputTextFlags_None) -> bool;
+}  // namespace ImGui

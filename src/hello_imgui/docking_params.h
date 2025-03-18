@@ -303,8 +303,10 @@ struct DockableWindow
 {
     std::string label;
     DockSpaceName dockSpaceName;
+    std::string category;
     VoidFunction GuiFunction = EmptyVoidFunction();
     VoidFunction customViewMenu = EmptyVoidFunction();
+    std::function<void(std::shared_ptr<DockableWindow>&)> customTitleBarContextFunction = nullptr;
     bool isVisible = true;
     bool rememberIsVisible = true;
     bool canBeClosed = true;
