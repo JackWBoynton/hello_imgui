@@ -28,6 +28,7 @@ function(hello_imgui_add_app)
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     # The application name is the first argument in ARGN
     list(GET ARGN 0 app_name)
+    list(GET ARGN 1 link)
     # After parsing, the unparsed arguments are what's left and are treated
     # as sources except the first one (which is the app name)
     # We should also remove the ASSETS_LOCATION argument if provided
@@ -45,14 +46,15 @@ function(hello_imgui_add_app)
             set(assets_location ${ARG_ASSETS_LOCATION})
         endif()
     endif()
-    if (NOT ARG_LINK)
-        set(link ON)
-    else()
-        set(link ${ARG_LINK})
-    endif()
+
+    # default to linking the provided target, but if OFF is passed, dont link
+    # this is mostly to support emscripten builds where a lib is between the exe and the target and
+    # emscripten breaks if we double link to the same static lib
+    # default arg_link to on
 
     message(VERBOSE "hello_imgui_add_app
              app_name=${app_name}
+             link=${link}
              sources=${app_sources}
              assets_location=${assets_location}
     ")
@@ -78,6 +80,7 @@ function(hello_imgui_add_app)
         add_executable(${app_name} ${app_sources})
     endif()
 
+    message(STATUS "hello_imgui_add_app: adding target ${app_name} with sources ${app_sources} and link ${ARG_LINK}")
     hello_imgui_prepare_app(${app_name} ${assets_location} ${link})
 endfunction()
 
@@ -148,7 +151,8 @@ function(hello_imgui_prepare_app app_name assets_location link)
     hello_imgui_platform_customization(${app_name} ${assets_location})
 
     if (${link})
-        target_link_libraries(${app_name} PUBLIC hello-imgui::hello_imgui)
+        message(STATUS "hello_imgui_prepare_app: linking ${app_name} to hello_imgui ${link}")
+        target_link_libraries(${app_name} PRIVATE hello-imgui::hello_imgui)
     endif()
 
     if (ANDROID AND HELLOIMGUI_CREATE_ANDROID_STUDIO_PROJECT)
