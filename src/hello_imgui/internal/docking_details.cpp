@@ -478,8 +478,11 @@ namespace DockingDetails
 
         for (auto& dockableWindow : dockableWindows)
         {
-            if (dockableWindow->state != DockableWindowAdditionState::AddedToHelloImGui)
+            if (dockableWindow->state != DockableWindowAdditionState::AddedToHelloImGui) {
+                printf("[DockableWindow] %s not added to HelloImGui %d\n", dockableWindow->label.c_str(), 
+                       (int)dockableWindow->state);
                 continue;
+            }
 
             bool shallFocusWindow = dockableWindow->focusWindowAtNextFrame && wereAllDockableWindowsInited;
 

@@ -18,20 +18,22 @@ include(${CMAKE_CURRENT_LIST_DIR}/utils/cache_hello_imgui_paths.cmake)
 function(hello_imgui_add_app)
     #############################################################################
     # CMake argument parsing shenanigans...
-    # arguments are parsed as: app_name, app_sources, assets_location
+    # arguments are parsed as: app_name, app_sources, link, assets_location
     #############################################################################
     # Define the keywords for known arguments
-    set(oneValueArgs ASSETS_LOCATION)
+    set(oneValueArgs LINK ASSETS_LOCATION)
     set(multiValueArgs "")
     set(options "")
     # Parse the arguments
     cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     # The application name is the first argument in ARGN
     list(GET ARGN 0 app_name)
+    list(GET ARGN 1 link)
     # After parsing, the unparsed arguments are what's left and are treated
     # as sources except the first one (which is the app name)
     # We should also remove the ASSETS_LOCATION argument if provided
     list(REMOVE_AT ARG_UNPARSED_ARGUMENTS 0)
+    list(REMOVE_AT ARG_UNPARSED_ARGUMENTS 1)
     set(app_sources ${ARG_UNPARSED_ARGUMENTS})
     # The ASSETS_LOCATION parameter is optional
     if(NOT ARG_ASSETS_LOCATION)
@@ -45,8 +47,14 @@ function(hello_imgui_add_app)
         endif()
     endif()
 
+    # default to linking the provided target, but if OFF is passed, dont link
+    # this is mostly to support emscripten builds where a lib is between the exe and the target and
+    # emscripten breaks if we double link to the same static lib
+    # default arg_link to on
+
     message(VERBOSE "hello_imgui_add_app
              app_name=${app_name}
+             link=${link}
              sources=${app_sources}
              assets_location=${assets_location}
     ")
@@ -72,7 +80,8 @@ function(hello_imgui_add_app)
         add_executable(${app_name} ${app_sources})
     endif()
 
-    hello_imgui_prepare_app(${app_name} ${assets_location})
+    message(STATUS "hello_imgui_add_app: adding target ${app_name} with sources ${app_sources} and link ${ARG_LINK}")
+    hello_imgui_prepare_app(${app_name} ${assets_location} ${link})
 endfunction()
 
 
@@ -136,12 +145,15 @@ endfunction()
 #     * It will automatically link the target to the required libraries (hello_imgui, OpenGl, glad, etc)
 #     * It will embed the assets (for desktop, mobile, and emscripten apps)
 #     * It will perform additional customization (app icon and name on mobile platforms, etc)
-function(hello_imgui_prepare_app app_name assets_location)
+function(hello_imgui_prepare_app app_name assets_location link)
     set_bundle_variables_defaults(${app_name})
     hello_imgui_bundle_assets(${app_name} ${assets_location})
     hello_imgui_platform_customization(${app_name} ${assets_location})
 
-    target_link_libraries(${app_name} PRIVATE hello-imgui::hello_imgui)
+    if (${link})
+        message(STATUS "hello_imgui_prepare_app: linking ${app_name} to hello_imgui ${link}")
+        target_link_libraries(${app_name} PRIVATE hello-imgui::hello_imgui)
+    endif()
 
     if (ANDROID AND HELLOIMGUI_CREATE_ANDROID_STUDIO_PROJECT)
         set(apkCMake_applicationIdUrlPart ${HELLO_IMGUI_BUNDLE_IDENTIFIER_URL_PART})
