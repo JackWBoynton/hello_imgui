@@ -5,7 +5,7 @@ namespace HelloImGui
 namespace Widgets
 {
 Logger::Logger(std::string label_, DockSpaceName dockSpaceName_)
-    : DockableWindow(label_, dockSpaceName_, {})
+    : DockableWindow{label_, dockSpaceName_}
     , log_(logBuffer_, maxBufferSize)
 {
     this->GuiFunction = [this]() {

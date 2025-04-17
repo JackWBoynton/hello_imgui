@@ -457,17 +457,32 @@ namespace DockingDetails
         }
     }
 
+    static void CleanupWindowRec(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
+    {
+        std::erase_if(dockableWindows, [](const auto& dockableWindow) { return dockableWindow->wantsClose; });
+        for (auto& dockableWindow : dockableWindows)
+        {
+            if (!dockableWindow->dockingParams.dockableWindows.empty())
+            {
+                CleanupWindowRec(dockableWindow->dockingParams.dockableWindows);
+            }
+        }
+    }
+
     void ShowDockableWindows(std::vector<std::shared_ptr<DockableWindow>>& dockableWindows)
     {
         bool wereAllDockableWindowsInited = (ImGui::GetFrameCount() > 1);
+        CleanupWindowRec(dockableWindows);
 
         // remove windows who want to be
-        std::erase_if(dockableWindows, [](const auto& dockableWindow) { return dockableWindow->wantsClose; });
 
         for (auto& dockableWindow : dockableWindows)
         {
-            if (dockableWindow->state != DockableWindowAdditionState::AddedToHelloImGui)
+            if (dockableWindow->state != DockableWindowAdditionState::AddedToHelloImGui) {
+                printf("[DockableWindow] %s not added to HelloImGui %d\n", dockableWindow->label.c_str(), 
+                       (int)dockableWindow->state);
                 continue;
+            }
 
             bool shallFocusWindow = dockableWindow->focusWindowAtNextFrame && wereAllDockableWindowsInited;
 

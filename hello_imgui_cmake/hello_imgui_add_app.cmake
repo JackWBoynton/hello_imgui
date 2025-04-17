@@ -54,6 +54,7 @@ function(hello_imgui_add_app)
 
   message(VERBOSE "hello_imgui_add_app
              app_name=${app_name}
+             link=${link}
              sources=${app_sources}
              assets_location=${assets_location}
     ")

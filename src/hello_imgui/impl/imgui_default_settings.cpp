@@ -19,7 +19,6 @@ namespace ImGuiDefaultSettings
 
         if (!HelloImGui::AssetExists(fontFilename))
         {
-            assert(false);
             ImGui::GetIO().Fonts->AddFontDefault();
             return;
         }
