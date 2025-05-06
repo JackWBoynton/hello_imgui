@@ -1429,7 +1429,7 @@ void AbstractRunner::OnLowMemory()
 
 void AbstractRunner::TearDown(bool gotException)
 {
-    IM_ASSERT(!mWasTearedDown && "TearDown() called twice!");
+    IM_ASSERT(gotException || !mWasTearedDown && "TearDown() called twice!");
     mWasTearedDown = true;
     if (! gotException)
     {
