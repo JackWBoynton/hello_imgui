@@ -25,22 +25,31 @@ bool ShouldRemoteDisplay();
 
 namespace SplitIdsHelper
 {
+
+    // NOTE: we need to make sure this dockspace name label usage follows ImGUi's label/ID conventions
+    // like ignoring anything before the ###
     std::map<DockSpaceName, ImGuiID> gImGuiSplitIDs;
+
+    inline DockSpaceName StripPrefix(const DockSpaceName& name)
+    {
+        auto pos = name.find("###");
+        return (pos != DockSpaceName::npos) ? name.substr(pos) : name;
+    }
 
     bool ContainsSplit(const DockSpaceName& dockSpaceName)
     {
-        return gImGuiSplitIDs.find(dockSpaceName) != gImGuiSplitIDs.end();
+        return gImGuiSplitIDs.find(StripPrefix(dockSpaceName)) != gImGuiSplitIDs.end();
     }
 
     ImGuiID GetSplitId(const DockSpaceName& dockSpaceName)
     {
         IM_ASSERT(ContainsSplit(dockSpaceName) && "GetSplitId: dockSpaceName not found in gImGuiSplitIDs");
-        return gImGuiSplitIDs.at(dockSpaceName);
+        return gImGuiSplitIDs.at(StripPrefix(dockSpaceName));
     }
 
     void SetSplitId(const DockSpaceName& dockSpaceName, ImGuiID imguiId)
     {
-        gImGuiSplitIDs[dockSpaceName] = imguiId;
+        gImGuiSplitIDs[StripPrefix(dockSpaceName)] = imguiId;
     }
 
     std::string SaveSplitIds()
@@ -478,8 +487,10 @@ namespace DockingDetails
 
         for (auto& dockableWindow : dockableWindows)
         {
-            if (dockableWindow->state != DockableWindowAdditionState::AddedToHelloImGui) {
-                printf("[DockableWindow] %s not added to HelloImGui %d\n", dockableWindow->label.c_str(), 
+            if (dockableWindow->state != DockableWindowAdditionState::AddedToHelloImGui)
+            {
+                printf("[DockableWindow] %s not added to HelloImGui %d\n",
+                       dockableWindow->label.c_str(),
                        (int)dockableWindow->state);
                 continue;
             }

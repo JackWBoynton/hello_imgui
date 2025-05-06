@@ -284,6 +284,7 @@ namespace HelloImGuiIniSettings
 
     void LoadImGuiSettings(const std::string& iniPartsFilename, const std::string& layoutName)
     {
+        printf("Loading ImGui settings from %s\n", iniPartsFilename.c_str());
         std::string iniPartName = "ImGui_" + details::SanitizeIniNameOrCategory(layoutName);
 
         IniParts iniParts = IniParts::LoadFromFile(iniPartsFilename);
