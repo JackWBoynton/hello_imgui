@@ -86,41 +86,13 @@ endfunction()
 function(configure_imgui_test_engine_with_python_gil)
     # 1. imgui_test_engine should move the GIL between threads
     target_compile_definitions(imgui_test_engine PUBLIC IMGUI_TEST_ENGINE_WITH_PYTHON_GIL)
-
-    # Development.Module is available since CMake 3.18 only,
-    # hence the main CMakeList specifies
-    #   cmake_minimum_required(VERSION 3.18)
+    # 2. and for this it needs to link with pybind
     if(SKBUILD)
-        # we only need the Development.Module component to build native modules
-        find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development.Module)
+        # if building wheel, only add include path to pybind11 and python
+        target_link_libraries(imgui_test_engine PUBLIC pybind11::pybind11)
     else()
-        # when building via CMake, we may need the full Development component to be able to debug the native module
-        # warning, Starting with CMake 3.18, the FindPython module introduced more granular components:
-        # Development.Module (and probably others)
-        find_package(Python 3.8 REQUIRED COMPONENTS Interpreter Development)
-    endif()
-
-    # Debug messages to verify Python detection
-    if(Python_FOUND)
-        message(STATUS "Python found:")
-        message(STATUS "  Executable: ${Python_EXECUTABLE}")
-        message(STATUS "  Include Dir: ${Python_INCLUDE_DIRS}")
-        message(STATUS "  Libraries: ${Python_LIBRARIES}")
-    else()
-        message(FATAL_ERROR "Python development components not found.")
-    endif()
-
-    if (SKBUILD)
-        # linking with Python::Python will fail with skbuild...
-        target_include_directories(imgui_test_engine PUBLIC ${Python_INCLUDE_DIRS})
-    else()
-        # Not linking with Python::Python will fail outside of skbuild...
-        target_link_libraries(imgui_test_engine PUBLIC Python::Python)
-    endif()
-
-    if (WIN32)
-        # Band aid for windows debug build, where the python lib may not be found...
-        target_link_directories(imgui_test_engine PUBLIC ${Python_LIBRARY_DIRS})
+        # if building an app, link the python interpreter
+        target_link_libraries(imgui_test_engine PUBLIC pybind11::embed)
     endif()
 endfunction()
 

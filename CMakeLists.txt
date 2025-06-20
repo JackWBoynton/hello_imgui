@@ -15,7 +15,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(MACOSX TRUE CACHE BOOL "" FORCE)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 
 # Set HELLOIMGUI_BASEPATH / HELLOIMGUI_CMAKE_PATH
 include(${CMAKE_CURRENT_LIST_DIR}/hello_imgui_cmake/utils/cache_hello_imgui_paths.cmake)
@@ -37,10 +37,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/hello_imgui_cmake/utils/cache_hello_imgui_path
 #     * It will automatically link the target to the required libraries (hello_imgui, OpenGl, glad, etc)
 #     * It will embed the assets (for desktop, mobile, and emscripten apps)
 #     * It will perform additional customization (app icon and name on mobile platforms, etc)
-#     * On desktop platforms, it will perform a "portable install" (i.e. assets and executable are in the same folder)
-#
-# If you want to control the install of your app, you can set HELLOIMGUI_ADD_APP_WITH_INSTALL to OFF
-# See an example in https://github.com/pthom/hello_imgui_template/blob/main/CMakeLists.txt
 #
 include(hello_imgui_add_app)
 
@@ -113,7 +109,6 @@ if(ANDROID OR MINGW)
 endif()
 # Note: to reduce wasm size, you may want to disable freetype on emscripten.
 option(HELLOIMGUI_USE_FREETYPE "Use freetype for text rendering" ${freetype_default})
-option(HELLOIMGUI_USE_FREETYPE_PLUTOSVG "Use plutosvg to load svg fonts" ON)
 
 #------------------------------------------------------------------------------
 # <Dependencies> # do not remove this line (used by the script that generates the documentation)
@@ -190,6 +185,18 @@ if (NOT DEFINED HELLOIMGUI_BUILD_IMGUI)
 endif()
 
 #------------------------------------------------------------------------------
+# Build options / ImPlot
+#------------------------------------------------------------------------------
+# HELLOIMGUI_IMPLOT_SOURCE_DIR: folder containing the sources for implot (by default in the submodule external/implot)
+if (NOT DEFINED HELLOIMGUI_IMPLOT_SOURCE_DIR)
+    set(HELLOIMGUI_IMPLOT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/external/implot" CACHE STRING "Source dir of ImPlot")
+endif()
+# if HELLOIMGUI_BUILD_IMPLOT, implot will be built as part of the build of HelloImGui
+if (NOT DEFINED HELLOIMGUI_BUILD_IMPLOT)
+    option(HELLOIMGUI_BUILD_IMPLOT "Build ImPlot as part of HelloImGui" ON)
+endif()
+
+#------------------------------------------------------------------------------
 # Common build options / HelloImGui
 #------------------------------------------------------------------------------
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
@@ -202,9 +209,7 @@ option(HELLOIMGUI_BUILD_TESTS "Build tests" OFF)
 #------------------------------------------------------------------------------
 # Options / ImGui Test Engine
 #------------------------------------------------------------------------------
-if (NOT DEFINED HELLOIMGUI_WITH_TEST_ENGINE)
-    option(HELLOIMGUI_WITH_TEST_ENGINE "Provide ImGui Test engine" OFF)
-endif()
+option(HELLOIMGUI_WITH_TEST_ENGINE "Provide ImGui Test engine" OFF)
 message(STATUS "HELLOIMGUI_WITH_TEST_ENGINE=${HELLOIMGUI_WITH_TEST_ENGINE}")
 
 #------------------------------------------------------------------------------
@@ -265,7 +270,7 @@ mark_as_advanced(HELLO_IMGUI_IMGUI_SHARED)
 # -----------------------------------------------------------------------------
 # By default, hello_imgui will download and build the required libraries automatically,
 # if they cannot be found via cmake's find_package:
-#   glfw3, plutosvg, freetype
+#   glfw3, lunasvg, freetype
 # To build offline, you can for example pre-install the required libraries with vcpkg,
 # but you can also install them via a system package manager, or add them manually as targets.
 #
@@ -276,13 +281,13 @@ mark_as_advanced(HELLO_IMGUI_IMGUI_SHARED)
 #
 #    git clone https://github.com/microsoft/vcpkg
 #    ./vcpkg/bootstrap-vcpkg.sh
-#    ./vcpkg/vcpkg install glfw3 freetype
+#    ./vcpkg/vcpkg install glfw3 freetype lunasvg
 #    export CMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake
 #    mkdir build && cd build
 #    cmake ..
 #
 # Note: under windows, you could specify a static triplet (x64-windows-static):
-#     ./vcpkg/vcpkg install freetype:x64-windows-static glfw3:x64-windows-static
+#     ./vcpkg/vcpkg install freetype:x64-windows-static glfw3:x64-windows-static lunasvg:x64-windows-static
 #
 # -----------------------------------------------------------------------------
 # How to use ImGui package from vcpkg (*not* recommended)
@@ -296,9 +301,9 @@ mark_as_advanced(HELLO_IMGUI_IMGUI_SHARED)
 #
 #    git clone https://github.com/microsoft/vcpkg
 #    ./vcpkg/bootstrap-vcpkg.sh
-#    ./vcpkg/vcpkg install glfw3 freetype
+#    ./vcpkg/vcpkg install glfw3 freetype lunasvg
 #    # install imgui from vcpkg, with the correct options
-#    ./vcpkg/vcpkg install "imgui[docking-experimental,glfw-binding,opengl3-binding]"
+#    ./vcpkg/vcpkg install "imgui[docking-experimental,freetype-lunasvg,glfw-binding,opengl3-binding]"
 #
 #    export CMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake
 #    mkdir build && cd build
@@ -314,12 +319,6 @@ option(HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE "Use imgui from cmake package (provide
 option(HELLOIMGUI_WITH_NETIMGUI "Use netImgui for remote rendering" OFF)
 # Using https://github.com/ggerganov/imgui-ws
 option(HELLOIMGUI_WITH_IMGUIWS "Use imgui-ws for remote rendering" OFF)
-
-#------------------------------------------------------------------------------
-# Use external JSON (i.e. use a custom version, provided that your CMake scripts
-# ensure that linking with nlohmann_json::nlohmann_json will work)
-#------------------------------------------------------------------------------
-option(HELLOIMGUI_USE_EXTERNAL_JSON "Use external nlohmann_json library" OFF)
 
 ###############################################################################
 # End of options
