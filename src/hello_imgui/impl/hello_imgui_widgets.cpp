@@ -224,12 +224,12 @@ InputTextData InputTextDataFromDict(const DictTypeInputTextData& dict)
 // Serialization to/from string using JSON
 std::string InputTextDataToString(const InputTextData& data)
 {
-        nlohmann::json j = {
-            {"Text", data.Text},
-                        {"Multiline", data.Multiline},
-                        {"SizeEm_x", data.SizeEm.x},
-            {"SizeEm_y", data.SizeEm.y}
-        };
+    nlohmann::json j = {
+        {"Text", data.Text},
+                    {"Multiline", data.Multiline},
+                    {"SizeEm_x", data.SizeEm.x},
+        {"SizeEm_y", data.SizeEm.y}
+    };
     return j.dump();
 }
 
@@ -237,10 +237,10 @@ InputTextData InputTextDataFromString(const std::string& str)
 {
     nlohmann::json j = nlohmann::json::parse(str);
     InputTextData result;
-        result.Text = j["Text"];
-        result.Multiline = j["Multiline"];
-        result.SizeEm.x = j["SizeEm_x"];
-        result.SizeEm.y = j["SizeEm_y"];
+    result.Text = j.value("Text", std::string());
+    result.Multiline = j.value("Multiline", false);
+    result.SizeEm.x = j.value("SizeEm_x", 0.0f);
+    result.SizeEm.y = j.value("SizeEm_y", 0.0f);
     return result;
 }
 }
