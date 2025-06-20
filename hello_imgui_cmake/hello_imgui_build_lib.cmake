@@ -233,9 +233,6 @@ function(him_add_hello_imgui)
     if(APPLE AND NOT IOS)
         target_compile_definitions(${HELLOIMGUI_TARGET} PUBLIC HELLOIMGUI_MACOS)
     endif()
-    if(APPLE AND IOS)
-        target_compile_definitions(${HELLOIMGUI_TARGET} PUBLIC HELLOIMGUI_IOS)
-    endif()
     if(APPLE)
         target_compile_options(${HELLOIMGUI_TARGET} PRIVATE "-x" "objective-c++")
     endif()
@@ -245,9 +242,24 @@ function(him_add_hello_imgui)
     target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC stb_hello_imgui)
     if (HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE)
         find_package(imgui CONFIG REQUIRED)
-        target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC imgui::imgui)
+        target_link_libraries(${HELLOIMGUI_TARGET} PRIVATE imgui::imgui)
+        get_target_property(IMGUI_INCLUDES imgui::imgui INTERFACE_INCLUDE_DIRECTORIES)
+        target_include_directories(${HELLOIMGUI_TARGET} PUBLIC
+            ${IMGUI_INCLUDES}
+        )
     else()
         target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC imgui)
+    endif()
+
+    if (HELLOIMGUI_USE_IMPLOT_CMAKE_PACKAGE)
+        find_package(implot CONFIG REQUIRED)
+        target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC implot::implot)
+        get_target_property(IMPLOT_INCLUDES implot::implot INTERFACE_INCLUDE_DIRECTORIES)
+        target_include_directories(${HELLOIMGUI_TARGET} PUBLIC
+            ${IMPLOT_INCLUDES}
+        )
+    else()
+        target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC implot)
     endif()
 
     add_library(hello-imgui::hello_imgui ALIAS hello_imgui)
@@ -281,9 +293,30 @@ function(him_build_imgui)
         endif()
         if (HELLOIMGUI_USE_FREETYPE)
             _him_add_freetype_to_imgui()
-            if (HELLOIMGUI_USE_FREETYPE_PLUTOSVG)
-                _him_add_freetype_plutosvg_to_imgui()
-            endif()
+        endif()
+    endif()
+endfunction()
+
+function(him_build_implot)
+    # check that HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE is on if a package is found
+    find_package(implot CONFIG QUIET)
+    if(implot_FOUND AND NOT HELLOIMGUI_USE_IMPLOT_CMAKE_PACKAGE)
+        message(FATAL_ERROR "
+            implot is found via find_package(implot), but HELLOIMGUI_USE_IMPLOT_CMAKE_PACKAGE is OFF.
+            You should either
+                - set -DHELLOIMGUI_USE_IMPLOT_CMAKE_PACKAGE=ON (this will use the implot CMake package)
+                - or uninstall the implot package (e.g. vcpkg remove implot)
+        ")
+    endif()
+
+    message(STATUS "HELLOIMGUI_USE_IMPLOT_CMAKE_PACKAGE is ${HELLOIMGUI_USE_IMPLOT_CMAKE_PACKAGE}")
+    if (HELLOIMGUI_USE_IMPLOT_CMAKE_PACKAGE)
+        set(HELLOIMGUI_BUILD_IMPLOT OFF CACHE BOOL "" FORCE)
+        find_package(implot CONFIG REQUIRED)
+    else()
+        if (HELLOIMGUI_BUILD_IMPLOT)
+            #_him_checkout_imgui_submodule_if_needed()
+            _him_do_build_implot()
         endif()
     endif()
 endfunction()
@@ -327,6 +360,20 @@ function(him_install_imgui)
     endif()
 endfunction()
 
+function(him_install_implot)
+    if(HELLOIMGUI_INSTALL)
+        if(NOT TARGET implot)
+            return()
+        endif()
+
+        install(TARGETS implot DESTINATION ./lib/)
+        file(GLOB implot_headers
+            ${HELLOIMGUI_IMPLOT_SOURCE_DIR}/*.h
+        )
+        install(FILES ${implot_headers} DESTINATION include)
+    endif()
+endfunction()
+
 
 function(_him_checkout_imgui_submodule_if_needed)
     if (HELLOIMGUI_BUILD_IMGUI)
@@ -354,6 +401,12 @@ function(_him_do_build_imgui)
     else()
         add_library(imgui ${imgui_sources})
     endif()
+
+    # TODO: @jboynton is this really what we need here?
+    #if (WIN32)
+    #    target_compile_definitions(imgui PRIVATE EXPORT_SYMBOLS=1)
+    #endif()
+
     target_include_directories(imgui PUBLIC
         $<BUILD_INTERFACE:${HELLOIMGUI_IMGUI_SOURCE_DIR}>
         $<BUILD_INTERFACE:${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends>
@@ -364,17 +417,45 @@ function(_him_do_build_imgui)
     hello_imgui_msvc_target_set_folder(imgui ${HELLOIMGUI_SOLUTIONFOLDER}/external)
 endfunction()
 
+function(_him_do_build_implot)
+    file(GLOB implot_sources ${HELLOIMGUI_IMPLOT_SOURCE_DIR}/*.h ${HELLOIMGUI_IMPLOT_SOURCE_DIR}/*.cpp)
+    if (HELLO_IMGUI_IMPLOT_SHARED)
+        add_library(implot SHARED ${implot_sources})
+    else()
+        add_library(implot ${implot_sources})
+    endif()
+
+    target_link_libraries(implot PRIVATE imgui)
+
+    # TODO: @jboynton is this really what we need here?
+    #if (WIN32)
+    #    target_compile_definitions(implot PRIVATE EXPORT_SYMBOLS=1)
+    #endif()
+
+    him_add_installable_dependency(implot)
+    hello_imgui_msvc_target_set_folder(implot ${HELLOIMGUI_SOLUTIONFOLDER}/external)
+endfunction()
+
 function(_him_add_freetype_to_imgui)
-    # Add freetype
+    # Add freetype + lunasvg to imgui
+    # This is especially useful to support emojis (possibly colored) in imgui
+    # See doc:
+    #     https://github.com/ocornut/imgui/blob/master/docs/FONTS.md#using-colorful-glyphsemojis
+    # We have to
     # - add imgui_freetype.cpp and imgui_freetype.h to imgui
     # - enable freetype in imgui via IMGUI_ENABLE_FREETYPE
+    # - enable lunasvg in imgui via IMGUI_ENABLE_FREETYPE_LUNASVG
+    # - add lunasvg to imgui
     # - define IMGUI_USE_WCHAR32 in imgui
+
     # Note: also change add_imgui.cmake in bundle!
 
+    #
     # 1. Build or find freetype (if downloaded, make sure it is static)
+    #
     if(TARGET freetype)
         message(STATUS "HelloImGui: using freetype target")
-        set(HIM_FREETYPE_LINKED_LIBRARY freetype CACHE STRING "" FORCE)
+        set(freetype_linked_library freetype)
     else()
         set(download_freetype OFF)
         if (HELLOIMGUI_DOWNLOAD_FREETYPE_IF_NEEDED AND NOT HELLOIMGUI_FETCH_FORBIDDEN)
@@ -410,11 +491,11 @@ function(_him_add_freetype_to_imgui)
             FetchContent_Declare(
                 freetype
                 GIT_REPOSITORY https://github.com/freetype/freetype.git
-                GIT_TAG        VER-2-13-3
+                GIT_TAG        VER-2-13-2
                 GIT_PROGRESS TRUE
             )
             FetchContent_MakeAvailable(freetype)
-            set(HIM_FREETYPE_LINKED_LIBRARY freetype CACHE STRING "" FORCE)
+            set(freetype_linked_library freetype)
             hello_imgui_msvc_target_set_folder(freetype ${HELLOIMGUI_SOLUTIONFOLDER}/external)
 
             set(BUILD_SHARED_LIBS ${backup_shared_lib} CACHE BOOL "" FORCE)
@@ -428,21 +509,12 @@ function(_him_add_freetype_to_imgui)
                 ")
             endif()
             find_package(Freetype 2.12 REQUIRED)
-            set(HIM_FREETYPE_LINKED_LIBRARY Freetype::Freetype CACHE STRING "" FORCE)
+            set(freetype_linked_library Freetype::Freetype)
         endif()
     endif()
 
-    # 2. Add freetype to imgui
-    target_link_libraries(imgui PUBLIC ${HIM_FREETYPE_LINKED_LIBRARY})
-    target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_FREETYPE)
+    target_link_libraries(imgui PUBLIC ${freetype_linked_library})
 
-    # 3. Add support for wchar32 (for emojis, and other unicode characters)
-    target_sources(imgui PRIVATE
-        ${HELLOIMGUI_IMGUI_SOURCE_DIR}/misc/freetype/imgui_freetype.cpp
-        ${HELLOIMGUI_IMGUI_SOURCE_DIR}/misc/freetype/imgui_freetype.h)
-    target_compile_definitions(imgui PUBLIC IMGUI_USE_WCHAR32)
-
-    # 4. Prepare Log info
     if(TARGET freetype)
         set(HELLOIMGUI_FREETYPE_SELECTED_INFO "Use target freetype" CACHE INTERNAL "" FORCE)
     elseif(download_freetype)
@@ -450,84 +522,50 @@ function(_him_add_freetype_to_imgui)
     else()
         set(HELLOIMGUI_FREETYPE_SELECTED_INFO "Use system Library" CACHE INTERNAL "" FORCE)
     endif()
-endfunction()
 
-
-function(_him_fetch_and_compile_plutovg_plutosvg)
-    # Fetch and compile plutovg and plutosvg
-    set(backup_build_shared_libs ${BUILD_SHARED_LIBS})
-    set(BUILD_SHARED_LIBS OFF)
-
-    # Fetch & build plutovg at configure time
-    include(FetchContent)
-    FetchContent_Declare(plutovg
-        GIT_REPOSITORY https://github.com/sammycage/plutovg
-        GIT_TAG        v1.0.0
-        GIT_PROGRESS TRUE
-    )
-    FetchContent_MakeAvailable(plutovg)
-
-    # Fetch plutosvg at configure time, then compile manually at build time
-    # (the stock CMakeLists of plutosvg is not compatible with a custom install of freetype)
-    # with build options:
-    #     PLUTOSVG_BUILD_STATIC
-    FetchContent_Populate(
-        plutosvg
-        GIT_REPOSITORY https://github.com/sammycage/plutosvg
-        GIT_TAG v0.0.6
-        SOURCE_DIR ${CMAKE_BINARY_DIR}/plutosvg_source
-        BINARY_DIR ${CMAKE_BINARY_DIR}/plutosvg_build
-    )
-    add_library(plutosvg STATIC ${plutosvg_SOURCE_DIR}/source/plutosvg.c)
-    target_include_directories(plutosvg PUBLIC $<BUILD_INTERFACE:${plutosvg_SOURCE_DIR}/source>)
-    target_compile_definitions(plutosvg PUBLIC PLUTOSVG_HAS_FREETYPE PLUTOSVG_BUILD_STATIC)
-    target_link_libraries(plutosvg PUBLIC ${HIM_FREETYPE_LINKED_LIBRARY} plutovg)
-    him_add_installable_dependency(plutosvg)
-
-    set(BUILD_SHARED_LIBS ${backup_build_shared_libs})
-endfunction()
-
-
-function(_him_add_freetype_plutosvg_to_imgui)
-    # Add freetype + plutovs/plutosvg to imgui
-    # This is especially useful to support emojis (possibly colored) in imgui
-    # See doc:
-    #     https://github.com/ocornut/imgui/blob/master/docs/FONTS.md#using-colorful-glyphsemojis
-    # We have to
-    # - compile or use a version of plutovg
-    # - compile or use a version of plutosvg with freetype support
-    # - enable plutosvg in imgui via IMGUI_ENABLE_FREETYPE_PLUTOSVG
-    # - add plutosvg + plutovg to imgui
-
-    # Option 1 (disabled at the moment, but left as an inspiration): use system plutosvg + plutovg
     #
-    # Note for package maintainers (conda, etc.):
-    #    the cache variable IMGUI_BUNDLE_PYTHON_USE_SYSTEM_LIBS may be used to detect
-    #    if fetching external libraries is disallowed. It is set to ON for conda for example.
-    # Below is an example code that could be used
+    # 2. Build lunasvg (static)
     #
-    # if (IMGUI_BUNDLE_PYTHON_USE_SYSTEM_LIBS)
-    #     find_library(PLUTOVG_LIBRARIES plutovg REQUIRED)
-    #     find_library(PLUTOVG_LIBRARIES plutosvg REQUIRED)
-    #     target_link_libraries(imgui PRIVATE ${PLUTOVG_LIBRARIES} ${PLUTOSVG_LIBRARIES})
-    #     target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG)
-    #     set(HELLOIMGUI_FREETYPE_SELECTED_INFO "${HELLOIMGUI_FREETYPE_SELECTED_INFO} - use system plutosvg" CACHE INTERNAL "" FORCE)
-    #     # early return
-    #     return()
-    # endif()
+    # Fetch and build lunasvg
+    if(NOT TARGET lunasvg)
+        # Try using lunasvg unofficial package from vcpkg
+        find_package(unofficial-lunasvg CONFIG QUIET)
+        find_package(lunasvg CONFIG QUIET)
+        if(unofficial-lunasvg_FOUND)
+            target_link_libraries(imgui PRIVATE unofficial::lunasvg::lunasvg)
+        elseif (lunasvg_FOUND)
+            target_link_libraries(imgui PRIVATE lunasvg::lunasvg)
 
-    # Option 2: download and compile plutosvg
-    set(can_download_freetype (HELLOIMGUI_DOWNLOAD_FREETYPE_IF_NEEDED OR HELLOIMGUI_FREETYPE_STATIC))
-    if (HELLOIMGUI_FETCH_FORBIDDEN OR NOT can_download_freetype)
-        message(WARNING "Cannot add plutosvg because fetching is forbidden")
-        return()
-    else()
-        _him_fetch_and_compile_plutovg_plutosvg()
-        target_link_libraries(imgui PUBLIC plutosvg)
-        target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG)
-        # Prepare Log info
-        set(HELLOIMGUI_FREETYPE_SELECTED_INFO "${HELLOIMGUI_FREETYPE_SELECTED_INFO} - downloaded plutosvg" CACHE INTERNAL "" FORCE)
+        elseif(NOT HELLOIMGUI_FETCH_FORBIDDEN)
+            set(backup_shared_lib ${BUILD_SHARED_LIBS})
+            set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+            include(FetchContent)
+            FetchContent_Declare(lunasvg
+                GIT_REPOSITORY https://github.com/sammycage/lunasvg
+                GIT_TAG        v2.3.9
+                GIT_PROGRESS TRUE
+            )
+            FetchContent_MakeAvailable(lunasvg)
+            set(BUILD_SHARED_LIBS ${backup_shared_lib} CACHE BOOL "" FORCE)
+            target_link_libraries(imgui PUBLIC lunasvg)
+            get_target_property(lunasvg_include_dirs lunasvg INTERFACE_INCLUDE_DIRECTORIES)
+            # Patch lunasvg include dir, for installable version (CMake install shenanigans)
+            set_target_properties(lunasvg PROPERTIES INTERFACE_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/_deps/lunasvg-src/include>)
+            get_target_property(lunasvg_include_dirs lunasvg INTERFACE_INCLUDE_DIRECTORIES)
+
+            him_add_installable_dependency(lunasvg)
+            hello_imgui_msvc_target_set_folder(lunasvg ${HELLOIMGUI_SOLUTIONFOLDER}/external)
+        endif()
     endif()
+
+    #
+    # 3. Add freetype and LunaSvg support to imgui
+    #    with support for wchar32 (for emojis, and other unicode characters)
+    target_sources(imgui PRIVATE
+        ${HELLOIMGUI_IMGUI_SOURCE_DIR}/misc/freetype/imgui_freetype.cpp
+        ${HELLOIMGUI_IMGUI_SOURCE_DIR}/misc/freetype/imgui_freetype.h)
+    target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_FREETYPE IMGUI_ENABLE_FREETYPE_LUNASVG)
+    target_compile_definitions(imgui PUBLIC IMGUI_USE_WCHAR32)
 endfunction()
 
 
@@ -813,12 +851,7 @@ function(_him_link_opengl_es_sdl target)
 endfunction()
 
 function(_him_add_glad)
-    # Will link glad to hello_imgui
-    # Sets cache variable HELLOIMGUI_GLAD_LIBRARY to the library that should be linked
-    # when using glad (can be glad::glad or glad, and can be used by other targets,
-    # such as ImmVision)
     if(TARGET glad)
-        set(HELLOIMGUI_GLAD_LIBRARY glad CACHE STRING "" FORCE)
         return()
     endif()
 
@@ -826,7 +859,6 @@ function(_him_add_glad)
     if(glad_FOUND)
         message(STATUS "HelloImGui: using glad from find_package(glad)")
         target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC glad::glad)
-        set(HELLOIMGUI_GLAD_LIBRARY glad::glad CACHE STRING "" FORCE)
         return()
     endif()
 
@@ -853,7 +885,6 @@ function(_him_add_glad)
 
     hello_imgui_msvc_target_set_folder(glad ${HELLOIMGUI_SOLUTIONFOLDER}/external/OpenGL_Loaders)
     target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC glad)
-    set(HELLOIMGUI_GLAD_LIBRARY glad CACHE STRING "" FORCE)
 
     him_add_installable_dependency(glad)
     if(HELLOIMGUI_INSTALL)
@@ -988,10 +1019,12 @@ function(_him_fetch_sdl_if_needed)
 endfunction()
 
 function(_him_fetch_declare_sdl)
+    # iOS and Android were tested with SDL 2.28.5
+    # other platforms, not yet
     if (IOS OR ANDROID)
-        set(sdl_version 2.28.5)  # iOS and Android were tested with SDL 2.28.5
+        set(sdl_version 2.28.5)
     else()
-        set(sdl_version 2.32.4)
+        set(sdl_version 2.24.2)
     endif()
 
     message(STATUS "Fetching SDL version ${sdl_version}")
@@ -1173,12 +1206,10 @@ function(him_install)
         file(GLOB internal_headers internal/*.h)
         install(FILES ${internal_headers} DESTINATION include/hello_imgui/internal)
 
-        if(CMAKE_BUILD_TYPE STREQUAL "Release")
-            install(DIRECTORY ${HELLOIMGUI_BASEPATH}/hello_imgui_cmake DESTINATION share/${PROJECT_NAME})
-            install(DIRECTORY ${HELLOIMGUI_BASEPATH}/hello_imgui_assets DESTINATION share/${PROJECT_NAME})
-            if (NOT IOS AND NOT ANDROID)
-                install(FILES ${HELLOIMGUI_BASEPATH}/README.md DESTINATION share/${PROJECT_NAME})
-            endif()
+        install(DIRECTORY ${HELLOIMGUI_BASEPATH}/hello_imgui_cmake DESTINATION share/${PROJECT_NAME})
+        install(DIRECTORY ${HELLOIMGUI_BASEPATH}/hello_imgui_assets DESTINATION share/${PROJECT_NAME})
+        if (NOT IOS AND NOT ANDROID)
+            install(FILES ${HELLOIMGUI_BASEPATH}/README.md DESTINATION share/${PROJECT_NAME})
         endif()
     endif()
 
@@ -1188,30 +1219,29 @@ endfunction()
 # Add nlohmann_json: API = him_add_nlohmann_json
 ###################################################################################################
 function(him_add_nlohmann_json)
-    if (HELLOIMGUI_USE_EXTERNAL_JSON)
-        message(STATUS "HelloImGui: using externally provided nlohmann_json")
+    if (TARGET nlohmann_json)
+        target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC nlohmann_json)
+        #him_add_installable_dependency(nlohmann_json)
+        return()
+    endif()
+    find_package(nlohmann_json CONFIG QUIET)
+    if(nlohmann_json_FOUND)
+        message(STATUS "HelloImGui: using nlohmann_json from find_package(nlohmann_json)")
         target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC nlohmann_json::nlohmann_json)
-        set(HELLOIMGUI_NLOHMANN_JSON_SELECTED_INFO "Provided externally" CACHE INTERNAL "" FORCE)
+        set(HELLOIMGUI_NLOHMANN_JSON_SELECTED_INFO "Found via find_package(nlohmann_json)" CACHE INTERNAL "" FORCE)
     else()
-        find_package(nlohmann_json CONFIG QUIET)
-        if(nlohmann_json_FOUND)
-            message(STATUS "HelloImGui: using nlohmann_json from find_package(nlohmann_json)")
-            target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC nlohmann_json::nlohmann_json)
-            set(HELLOIMGUI_NLOHMANN_JSON_SELECTED_INFO "Found via find_package(nlohmann_json)" CACHE INTERNAL "" FORCE)
-        else()
-            message(STATUS "HelloImGui: using nlohmann_json from external/nlohmann_json")
-            set(nlohmann_json_dir ${HELLOIMGUI_BASEPATH}/external/nlohmann_json)
-            add_library(nlohmann_json INTERFACE)
-            target_include_directories(nlohmann_json INTERFACE $<BUILD_INTERFACE:${nlohmann_json_dir}>)
-            # target_compile_definitions(nlohmann_json INTERFACE NLOHMANN_JSON_NOEXCEPTION)
-            target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC nlohmann_json)
-            set(HELLOIMGUI_NLOHMANN_JSON_SELECTED_INFO "Using external/nlohmann_json" CACHE INTERNAL "" FORCE)
+        message(STATUS "HelloImGui: using nlohmann_json from external/nlohmann_json")
+        set(nlohmann_json_dir ${HELLOIMGUI_BASEPATH}/external/nlohmann_json)
+        add_library(nlohmann_json INTERFACE)
+        target_include_directories(nlohmann_json INTERFACE $<BUILD_INTERFACE:${nlohmann_json_dir}>)
+        # target_compile_definitions(nlohmann_json INTERFACE NLOHMANN_JSON_NOEXCEPTION)
+        target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC nlohmann_json)
+        set(HELLOIMGUI_NLOHMANN_JSON_SELECTED_INFO "Using external/nlohmann_json" CACHE INTERNAL "" FORCE)
 
-            him_add_installable_dependency(nlohmann_json)
-            if(HELLOIMGUI_INSTALL)
-                install(FILES ${nlohmann_json_dir}/nlohmann/json.hpp DESTINATION include/nlohmann/json.hpp)
-                install(FILES ${nlohmann_json_dir}/nlohmann/json_fwd.hpp DESTINATION include/nlohmann/json_fwd.hpp)
-            endif()
+        him_add_installable_dependency(nlohmann_json)
+        if(HELLOIMGUI_INSTALL)
+            install(FILES ${nlohmann_json_dir}/nlohmann/json.hpp DESTINATION include/nlohmann/json.hpp)
+            install(FILES ${nlohmann_json_dir}/nlohmann/json_fwd.hpp DESTINATION include/nlohmann/json_fwd.hpp)
         endif()
     endif()
 endfunction()
@@ -1303,9 +1333,9 @@ function(him_main_add_hello_imgui_library)
     him_sanity_checks()
     him_add_stb_image()
     him_build_imgui()
+    him_build_implot()
     him_add_hello_imgui()
     him_add_nlohmann_json()
-
     if (HELLOIMGUI_WITH_TEST_ENGINE)
         add_imgui_test_engine()
     endif()
@@ -1349,4 +1379,5 @@ function(him_main_add_hello_imgui_library)
     him_add_misc_options()
     him_install()
     him_install_imgui()
+    him_install_implot()
 endfunction()

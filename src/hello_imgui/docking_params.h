@@ -1,12 +1,13 @@
 #pragma once
-#include "imgui.h"
 #include "hello_imgui/runner_callbacks.h"
+#include "imgui.h"
 #include <functional>
-#include <string>
-#include <vector>
-#include <utility>
+#include <memory>
 #include <optional>
 #include <stdio.h>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace HelloImGui
 {
@@ -24,7 +25,8 @@ HelloImGui will then provide a "View" menu with options to show/hide the dockabl
 
 ![demo docking](https://traineq.org/ImGuiBundle/HelloImGuiLayout.gif)
 
-* Source for this example: https://github.com/pthom/hello_imgui/tree/master/src/hello_imgui_demos/hello_imgui_demodocking
+* Source for this example:
+https://github.com/pthom/hello_imgui/tree/master/src/hello_imgui_demos/hello_imgui_demodocking
 * [Video explanation on YouTube](https://www.youtube.com/watch?v=XKxmz__F4ow) (5 minutes)
 
 
@@ -159,7 +161,6 @@ HelloImGui::Run(runnerParams);
 // where windows can be docked.
 using DockSpaceName = std::string;
 
-
 // @@md#DockingSplit
 
 // DockingSplit is a struct that defines the way the docking splits should
@@ -175,125 +176,46 @@ struct DockingSplit
     //  You should start by partitioning this space, in order to create a new dock space.
     DockSpaceName initialDock;
 
-    // `newDock`: _DockSpaceName (aka string)_. 
+    // `newDock`: _DockSpaceName (aka string)_.
     //  id of the new dock space that will be created.
     DockSpaceName newDock;
 
-    // `direction`: *ImGuiDir_* 
+    // `direction`: *ImGuiDir_*
     //  (enum with ImGuiDir_Down, ImGuiDir_Down, ImGuiDir_Left, ImGuiDir_Right)*
     //  Direction where this dock space should be created.
     ImGuiDir direction;
 
-    // `ratio`: _float, default=0.25f_. 
+    // `ratio`: _float, default=0.25f_.
     //  Ratio of the initialDock size that should be used by the new dock space.
     float ratio = 0.25f;
 
-    // `nodeFlags`: *ImGuiDockNodeFlags_ (enum)*. 
-    //  Flags to apply to the new dock space 
+    // `nodeFlags`: *ImGuiDockNodeFlags_ (enum)*.
+    //  Flags to apply to the new dock space
     //  (enable/disable resizing, splitting, tab bar, etc.)
     ImGuiDockNodeFlags nodeFlags = ImGuiDockNodeFlags_None;
 
+    // `defaultSize`: _ImVec2, default=(0.0f, 0.0f)_.
+    // Set this size to a non-zero value if you want to ensure that the new dock space
+    // has a specific size when it is created.
+    ImVec2 defaultSize = ImVec2(10.0f, 10.0f);
+
     // Constructor
-    DockingSplit(const DockSpaceName& initialDock_ = "", const DockSpaceName& newDock_ = "",
-                 ImGuiDir direction_ = ImGuiDir_Down, float ratio_ = 0.25f,
-                 ImGuiDockNodeFlags nodeFlags_ = ImGuiDockNodeFlags_None)
-        : initialDock(initialDock_), newDock(newDock_), direction(direction_), ratio(ratio_), nodeFlags(nodeFlags_) {}
+    DockingSplit(const DockSpaceName& initialDock_ = "",
+                 const DockSpaceName& newDock_ = "",
+                 ImGuiDir direction_ = ImGuiDir_Down,
+                 float ratio_ = 0.25f,
+                 ImGuiDockNodeFlags nodeFlags_ = ImGuiDockNodeFlags_None,
+                 ImVec2 defaultSize_ = ImVec2(10.0f, 10.0f))
+        : initialDock(initialDock_),
+          newDock(newDock_),
+          direction(direction_),
+          ratio(ratio_),
+          nodeFlags(nodeFlags_),
+          defaultSize(defaultSize_)
+    {
+    }
 };
 // @@md
-
-
-
-// @@md#DockableWindow
-
-// DockableWindow is a struct that represents a window that can be docked.
-struct DockableWindow
-{
-    // --------------- Main params -------------------
-
-    // `label`: _string_. Title of the window. It should be unique! Use "##" to add a unique suffix if needed.
-    std::string label;
-
-    // `dockSpaceName`: _DockSpaceName (aka string)_.
-    //  Id of the dock space where this window should initially be placed
-    DockSpaceName dockSpaceName;
-
-    // `GuiFunction`: _VoidFunction_.
-    // Any function that will render this window's Gui
-    VoidFunction GuiFunction = EmptyVoidFunction();
-
-
-    // --------------- Options --------------------------
-
-    // `isVisible`: _bool, default=true_.
-    //  Flag that indicates whether this window is visible or not.
-    bool isVisible = true;
-
-    // `rememberIsVisible`: _bool, default=true_.
-    //  Flag that indicates whether the window visibility should be saved in settings.
-    bool rememberIsVisible = true;
-
-    // `canBeClosed`: _bool, default=true_.
-    //  Flag that indicates whether the user can close this window.
-    bool canBeClosed = true;
-
-    // `callBeginEnd`: _bool, default=true_.
-    //  Flag that indicates whether ImGui::Begin and ImGui::End
-    //  calls should be added automatically (with the given "label").
-    //  Set to false if you want to call ImGui::Begin/End yourself
-    bool callBeginEnd = true;
-
-    // `includeInViewMenu`: _bool, default=true_.
-    //  Flag that indicates whether this window should be mentioned in the view menu.
-    bool includeInViewMenu = true;
-
-    // `imGuiWindowFlags`: _ImGuiWindowFlags, default=0_.
-    //  Window flags, see enum ImGuiWindowFlags_
-    ImGuiWindowFlags imGuiWindowFlags = 0;
-
-
-    // --------------- Focus window -----------------------------
-
-    // `focusWindowAtNextFrame`: _bool, default = false_.
-    //  If set to true this window will be focused at the next frame.
-    bool focusWindowAtNextFrame = false;
-
-
-    // --------------- Size & Position --------------------------
-    //              (only if not docked)
-
-    // `windowSize`: _ImVec2, default=(0.f, 0.f) (i.e let the app decide)_.
-    //  Window size (unused if docked)
-    ImVec2 windowSize = ImVec2(0.f, 0.f);
-
-    // `windowSizeCondition`: _ImGuiCond, default=ImGuiCond_FirstUseEver_.
-    //  When to apply the window size.
-    ImGuiCond  windowSizeCondition = ImGuiCond_FirstUseEver;
-
-    // `windowPos`: _ImVec2, default=(0.f, 0.f) (i.e let the app decide)_.
-    //  Window position (unused if docked)
-    ImVec2 windowPosition = ImVec2(0.f, 0.f);
-
-    // `windowPosCondition`: _ImGuiCond, default=ImGuiCond_FirstUseEver_.
-    //  When to apply the window position.
-    ImGuiCond  windowPositionCondition = ImGuiCond_FirstUseEver;
-
-
-    // --------------- Constructor ------------------------------
-    // Constructor
-    DockableWindow(
-        const std::string & label_ = "",
-        const DockSpaceName & dockSpaceName_ = "",
-        const VoidFunction guiFunction_ = EmptyVoidFunction(),
-        bool isVisible_ = true,
-        bool canBeClosed_ = true)
-        : label(label_), dockSpaceName(dockSpaceName_),
-          GuiFunction(guiFunction_),
-          isVisible(isVisible_),
-          canBeClosed(canBeClosed_) {}
-
-};
-// @@md
-
 
 enum class DockingLayoutCondition
 {
@@ -302,6 +224,7 @@ enum class DockingLayoutCondition
     Never
 };
 
+struct DockableWindow;
 
 // @@md#DockingParams
 
@@ -315,17 +238,16 @@ struct DockingParams
     // `dockingSplits`: _vector[DockingSplit]_.
     //  Defines the way docking splits should be applied on the screen
     //  in order to create new Dock Spaces
-    std::vector<DockingSplit>   dockingSplits;
+    std::vector<DockingSplit> dockingSplits;
 
     // `dockableWindows`: _vector[DockableWindow]_.
     //  List of the dockable windows, together with their Gui code
-    std::vector<DockableWindow> dockableWindows;
+    std::vector<std::shared_ptr<DockableWindow>> dockableWindows;
 
     // `layoutName`: _string, default="default"_.
     //  Displayed name of the layout.
     //  Only used in advanced cases, when several layouts are available.
     std::string layoutName = "Default";
-
 
     // --------------- Options -----------------------------
 
@@ -336,7 +258,6 @@ struct DockingParams
     //  Most flags are inherited by children dock spaces.
     //  You can also set flags for specific dock spaces via `DockingSplit.nodeFlags`
     ImGuiDockNodeFlags mainDockSpaceNodeFlags = ImGuiDockNodeFlags_PassthruCentralNode;
-
 
     // --------------- Layout handling -----------------------------
 
@@ -352,12 +273,11 @@ struct DockingParams
     //  applied manually by the user. layoutReset will be reset to false after this.
     bool layoutReset = false;
 
-
     // --------------- Helper Methods -----------------------------
 
     // `DockableWindow * dockableWindowOfName(const std::string & name)`:
     // returns a pointer to a dockable window
-    DockableWindow * dockableWindowOfName(const std::string& name);
+    std::shared_ptr<DockableWindow> dockableWindowOfName(const std::string& name);
 
     // `bool focusDockableWindow(const std::string& name)`:
     // will focus a dockable window (and make its tab visible if needed)
@@ -369,5 +289,58 @@ struct DockingParams
 };
 // @@md
 
-} // namespace HelloImGui
+enum class DockableWindowAdditionState
+{
+    Waiting,
+    AddedAsDummyToImGui,
+    AddedToHelloImGui
+};
 
+// @@md#DockableWindow
+
+// DockableWindow is a struct that represents a window that can be docked.
+struct DockableWindow
+{
+    std::string label;
+    DockSpaceName dockSpaceName;
+    std::string category;
+    VoidFunction GuiFunction = EmptyVoidFunction();
+    VoidFunction customViewMenu = EmptyVoidFunction();
+    std::function<void(std::shared_ptr<DockableWindow>&)> customTitleBarContextFunction = nullptr;
+    bool isVisible = true;
+    bool rememberIsVisible = true;
+    bool canBeClosed = true;
+    bool callBeginEnd = true;
+    bool includeInViewMenu = true;
+    ImGuiWindowFlags imGuiWindowFlags = 0;
+    bool focusWindowAtNextFrame = false;
+    ImVec2 windowSize = ImVec2(0.f, 0.f);
+    ImGuiCond windowSizeCondition = ImGuiCond_FirstUseEver;
+    ImVec2 windowPosition = ImVec2(0.f, 0.f);
+    ImGuiCond windowPositionCondition = ImGuiCond_FirstUseEver;
+    DockingParams dockingParams = {};
+    bool wantsClose = false;
+    bool justAdded = true;
+    bool wantsAutoDock = true;
+    DockableWindowAdditionState state = DockableWindowAdditionState::Waiting;
+};
+// @@md
+
+namespace SplitIdsHelper
+{
+    inline DockSpaceName StripPrefix(const DockSpaceName& name)
+    {
+        auto pos = name.find("###");
+        return (pos != DockSpaceName::npos) ? name.substr(pos) : name;
+    }
+
+    bool ContainsSplit(const DockSpaceName& dockSpaceName);
+    ImGuiID GetSplitId(const DockSpaceName& dockSpaceName);
+    void SetSplitId(const DockSpaceName& dockSpaceName, ImGuiID imguiId);
+
+    std::string SaveSplitIds();
+    void LoadSplitIds(const std::string& jsonStr);
+
+}  // namespace SplitIdsHelper
+
+}  // namespace HelloImGui

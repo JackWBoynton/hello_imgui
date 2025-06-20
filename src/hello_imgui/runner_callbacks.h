@@ -115,7 +115,8 @@ enum class DefaultIconFont
 {
     NoIcons,
     FontAwesome4,
-    FontAwesome6
+    FontAwesome6,
+    VsCodeIcons
 };
 // @@md
 

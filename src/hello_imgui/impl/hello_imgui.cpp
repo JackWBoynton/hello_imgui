@@ -1,14 +1,18 @@
 #include "hello_imgui/hello_imgui.h"
 #include "hello_imgui/internal/backend_impls/runner_factory.h"
-#include "hello_imgui/internal/menu_statusbar.h"
+#include "hello_imgui/internal/context.h"
 #include "hello_imgui/internal/docking_details.h"
+#include "hello_imgui/internal/menu_statusbar.h"
 #include "imgui_internal.h"
-#include <deque>
-#include <set>
 #include <chrono>
 #include <cstdio>
+#include <deque>
 #include <optional>
+#include <set>
 
+#ifndef GHelloImGui
+HelloImGuiContext* GHelloImGui = nullptr;
+#endif
 
 namespace HelloImGui
 {
@@ -30,12 +34,11 @@ When running CMake, you should specify
       -DHELLOIMGUI_USE_GLFW3=ON
 )";
 
-
-bool _CheckAdditionLayoutNamesUniqueness(const RunnerParams &runnerParams)
+bool _CheckAdditionLayoutNamesUniqueness(const RunnerParams& runnerParams)
 {
     std::set<std::string> names_set;
     names_set.insert(runnerParams.dockingParams.layoutName);
-    for (const auto& layout: runnerParams.alternativeDockingLayouts)
+    for (const auto& layout : runnerParams.alternativeDockingLayouts)
         names_set.insert(layout.layoutName);
 
     bool areNamesUnique = (names_set.size() == 1 + runnerParams.alternativeDockingLayouts.size());
@@ -46,7 +49,6 @@ bool _CheckAdditionLayoutNamesUniqueness(const RunnerParams &runnerParams)
         )");
     return areNamesUnique;
 }
-
 
 // =========================== Priv_SetupRunner ==================================
 //
@@ -69,7 +71,6 @@ static RunnerParams* Priv_CurrentRunnerParamsPtr()
     return nullptr;
 }
 
-
 // Only one instance of `Renderer` can exist at a time
 // ---------------------------------------------------
 static int gRendererInstanceCount = 0;
@@ -80,42 +81,31 @@ enum class SetupMode
     Run
 };
 
-static SetupMode gSetupMode = SetupMode::Renderer;
-
-static void Priv_TearDown();
-
-static void Priv_SetupRunner(RunnerParams &passedUserParams, SetupMode setupMode)
+static void Priv_SetupRunner(RunnerParams& passedUserParams, SetupMode setupMode)
 {
-#ifdef IMGUI_BUNDLE_BUILD_PYTHON
-    // For python, we forgive the user for not calling TearDown() before calling Renderer()
-    // since it might be due to a Python exception, which might be recoverable, if running
-    // in a Python REPL, a notebook, or Pyodide.
-    if (gRendererInstanceCount > 0)
-    {
-        printf("HelloImGui: calling TearDown() prior to Setup (probable prior exception in Python).\n");
-        Priv_TearDown();
-    }
-#else
+    bool isUserPointer =
+        (setupMode == SetupMode::Run);  // When using HelloImGui::Run, we may modify the user's runnerParams
+    bool shallSetupTearDown =
+        (setupMode ==
+         SetupMode::Renderer);  // When using HelloImGui::Renderer, we shall call Setup/TearDown()
+
     if (gRendererInstanceCount > 0)
         throw std::runtime_error("Only one instance of `HelloImGui::Renderer` can exist at a time.");
-#endif
-    gSetupMode = setupMode;
-    bool isUserPointer = (setupMode == SetupMode::Run);  // When using HelloImGui::Run, we may modify the user's runnerParams
-    bool shallSetupTearDown = (setupMode == SetupMode::Renderer);  // When using HelloImGui::Renderer, we shall call Setup/TearDown()
-
     if (!isUserPointer)
-        gLastRunnerParamsOpt = passedUserParams; // Store a copy of the user's runnerParams
+        gLastRunnerParamsOpt = passedUserParams;  // Store a copy of the user's runnerParams
     else
-        gLastRunnerParamsUserPointer = &passedUserParams; // Store a pointer to the user's runnerParams
+        gLastRunnerParamsUserPointer = &passedUserParams;  // Store a pointer to the user's runnerParams
 
     IM_ASSERT(Priv_CurrentRunnerParamsPtr() != nullptr);
-    RunnerParams &runnerParams = *Priv_CurrentRunnerParamsPtr();
+    RunnerParams& runnerParams = *Priv_CurrentRunnerParamsPtr();
     IM_ASSERT(_CheckAdditionLayoutNamesUniqueness(runnerParams));
 
     gLastRunner = FactorRunner(runnerParams);
     if (gLastRunner == nullptr)
     {
-        fprintf(stderr, "HelloImGui::Renderer() failed to factor a runner!\n %s", gMissingBackendErrorMessage.c_str());
+        fprintf(stderr,
+                "HelloImGui::Renderer() failed to factor a runner!\n %s",
+                gMissingBackendErrorMessage.c_str());
         IM_ASSERT(false && "HelloImGui::Renderer() failed to factor a runner!");
     }
     if (shallSetupTearDown)
@@ -123,10 +113,12 @@ static void Priv_SetupRunner(RunnerParams &passedUserParams, SetupMode setupMode
     gRendererInstanceCount++;
 }
 
-static void Priv_TearDown()
+static void Priv_TearDown(SetupMode setupMode)
 {
     IM_ASSERT(gLastRunner != nullptr && "HelloImGui::Renderer::~Renderer() called without a valid runner");
-    bool shallSetupTearDown = (gSetupMode == SetupMode::Renderer);  // When using HelloImGui::Renderer, we shall call Setup/TearDown()
+    bool shallSetupTearDown =
+        (setupMode ==
+         SetupMode::Renderer);  // When using HelloImGui::Renderer, we shall call Setup/TearDown()
     if (shallSetupTearDown)
         gLastRunner->TearDown(false);
     gLastRunner = nullptr;
@@ -134,7 +126,6 @@ static void Priv_TearDown()
     gLastRunnerParamsOpt.reset();
     gLastRunnerParamsUserPointer = nullptr;
 }
-
 
 // =========================== ManualRender ==================================
 namespace ManualRender
@@ -152,7 +143,9 @@ namespace ManualRender
     void TrySwitchToInitialized()
     {
         if (sCurrentStatus == RendererStatus::Initialized)
-            IM_ASSERT(false && "HelloImGui::ManualRender::SetupFromXXX() cannot be called while already initialized. Call TearDown() first.");
+            IM_ASSERT(false &&
+                      "HelloImGui::ManualRender::SetupFromXXX() cannot be called while already initialized. "
+                      "Call TearDown() first.");
         sCurrentStatus = RendererStatus::Initialized;
     }
 
@@ -161,7 +154,8 @@ namespace ManualRender
     void TrySwitchToNotInitialized()
     {
         if (sCurrentStatus == RendererStatus::NotInitialized)
-            IM_ASSERT(false && "HelloImGui::ManualRender::TearDown() cannot be called while not initialized.");
+            IM_ASSERT(false &&
+                      "HelloImGui::ManualRender::TearDown() cannot be called while not initialized.");
         sCurrentStatus = RendererStatus::NotInitialized;
     }
 
@@ -183,14 +177,12 @@ namespace ManualRender
     }
 
     // Initializes the renderer with a simple GUI function and additional parameters.
-    void SetupFromGuiFunction(
-        const VoidFunction& guiFunction,
-        const std::string& windowTitle,
-        bool windowSizeAuto,
-        bool windowRestorePreviousGeometry,
-        const ScreenSize& windowSize,
-        float fpsIdle
-    )
+    void SetupFromGuiFunction(const VoidFunction& guiFunction,
+                              const std::string& windowTitle,
+                              bool windowSizeAuto,
+                              bool windowRestorePreviousGeometry,
+                              const ScreenSize& windowSize,
+                              float fpsIdle)
     {
         TrySwitchToInitialized();
         SimpleRunnerParams params;
@@ -216,11 +208,10 @@ namespace ManualRender
     void TearDown()
     {
         TrySwitchToNotInitialized();
-        Priv_TearDown();
+        Priv_TearDown(SetupMode::Renderer);
     }
 
-} // namespace ManualRender
-
+}  // namespace ManualRender
 
 // =========================== HelloImGui::Run ==================================
 
@@ -228,7 +219,7 @@ void Run(RunnerParams& runnerParams)
 {
     Priv_SetupRunner(runnerParams, SetupMode::Run);
     gLastRunner->Run();
-    Priv_TearDown();
+    Priv_TearDown(SetupMode::Run);
 }
 
 void Run(const SimpleRunnerParams& simpleRunnerParams)
@@ -237,14 +228,12 @@ void Run(const SimpleRunnerParams& simpleRunnerParams)
     Run(fullParams);
 }
 
-void Run(
-    const VoidFunction& guiFunction,
-    const std::string& windowTitle,
-    bool windowSizeAuto,
-    bool windowRestorePreviousGeometry,
-    const ScreenSize& windowSize,
-    float fpsIdle
-)
+void Run(const VoidFunction& guiFunction,
+         const std::string& windowTitle,
+         bool windowSizeAuto,
+         bool windowRestorePreviousGeometry,
+         const ScreenSize& windowSize,
+         float fpsIdle)
 {
     SimpleRunnerParams params;
     params.guiFunction = guiFunction;
@@ -256,38 +245,25 @@ void Run(
     Run(params);
 }
 
-
 // ============================== Utility functions ===============================
 
 RunnerParams* GetRunnerParams()
 {
     auto ptr = Priv_CurrentRunnerParamsPtr();
     if (ptr == nullptr)
-        throw std::runtime_error("HelloImGui::GetRunnerParams() would return null. Did you call HelloImGui::Run()?");
+        throw std::runtime_error(
+            "HelloImGui::GetRunnerParams() would return null. Did you call HelloImGui::Run()?");
     return ptr;
 }
 
-bool IsUsingHelloImGui()
-{
-    return Priv_CurrentRunnerParamsPtr() != nullptr;
-}
+bool IsUsingHelloImGui() { return Priv_CurrentRunnerParamsPtr() != nullptr; }
 
-void SwitchLayout(const std::string& layoutName)
-{
-    gLastRunner->LayoutSettings_SwitchLayout(layoutName);
-}
+void SwitchLayout(const std::string& layoutName) { gLastRunner->LayoutSettings_SwitchLayout(layoutName); }
 
-std::string CurrentLayoutName()
-{
-    return GetRunnerParams()->dockingParams.layoutName;
-}
-
+std::string CurrentLayoutName() { return GetRunnerParams()->dockingParams.layoutName; }
 
 // Private API, used internally by AppWindowScreenshotRgbBuffer()
-AbstractRunner *GetAbstractRunner()
-{
-    return gLastRunner.get();
-}
+AbstractRunner* GetAbstractRunner() { return gLastRunner.get(); }
 
 // Private API, not mentioned in headers!
 std::string GlslVersion()
@@ -302,24 +278,19 @@ std::string GlslVersion()
 #endif
 }
 
-
 namespace ChronoShenanigans
 {
     class ClockSeconds_
     {
-    private:
+       private:
         using Clock = std::chrono::high_resolution_clock;
         using second = std::chrono::duration<float, std::ratio<1>>;
         std::chrono::time_point<Clock> mStart;
 
-    public:
+       public:
         ClockSeconds_() : mStart(Clock::now()) {}
 
-        float elapsed() const
-        {
-            return std::chrono::duration_cast<second>
-                (Clock::now() - mStart).count();
-        }
+        float elapsed() const { return std::chrono::duration_cast<second>(Clock::now() - mStart).count(); }
     };
 
     float ClockSeconds()
@@ -328,7 +299,7 @@ namespace ChronoShenanigans
         return watch.elapsed();
     }
 
-}
+}  // namespace ChronoShenanigans
 
 static std::deque<float> gFrameTimes;
 
@@ -365,7 +336,7 @@ float FrameRate(float durationForMean)
     // Compute the mean frame rate
     float totalTime = lastFrameTime - gFrameTimes[i];
     int nbFrames = lastFrameIdx - i;
-    float fps =  (float)nbFrames / totalTime;
+    float fps = (float)nbFrames / totalTime;
     return fps;
 }
 
@@ -402,60 +373,66 @@ std::string RendererBackendTypeToString(RendererBackendType rendererBackendType)
 std::string GetBackendDescription()
 {
     const auto& params = GetRunnerParams();
-    #ifdef HELLOIMGUI_WITH_REMOTE_DISPLAY
+#ifdef HELLOIMGUI_WITH_REMOTE_DISPLAY
     if (params->remoteParams.enableRemoting)
         return "Remote";
-    #endif
+#endif
     std::string platformBackend = PlatformBackendTypeToString(params->platformBackendType);
     std::string rendererBackend = RendererBackendTypeToString(params->rendererBackendType);
     return platformBackend + " - " + rendererBackend;
 }
 
-
 #ifdef HELLOIMGUI_WITH_TEST_ENGINE
-extern ImGuiTestEngine *GHImGuiTestEngine;
+extern ImGuiTestEngine* GHImGuiTestEngine;
 ImGuiTestEngine* GetImGuiTestEngine() { return GHImGuiTestEngine; }
 #else
 ImGuiTestEngine* GetImGuiTestEngine() { return nullptr; }
 #endif
 
-void ChangeWindowSize(const ScreenSize &windowSize)
-{
-    gLastRunner->ChangeWindowSize(windowSize);
-}
+void ChangeWindowSize(const ScreenSize& windowSize) { gLastRunner->ChangeWindowSize(windowSize); }
 
-
-void UseWindowFullMonitorWorkArea()
-{
-    
-    gLastRunner->UseWindowFullMonitorWorkArea();
-}
-
-
-bool ShouldRemoteDisplay()
-{
-    return gLastRunner->ShouldRemoteDisplay();
-}
-
+bool ShouldRemoteDisplay() { return gLastRunner->ShouldRemoteDisplay(); }
 
 void SaveUserPref(const std::string& userPrefName, const std::string& userPrefContent)
 {
     gLastRunner->SaveUserPref(userPrefName, userPrefContent);
 }
 
-std::string LoadUserPref(const std::string& userPrefName)
+std::string LoadUserPref(const std::string& userPrefName) { return gLastRunner->LoadUserPref(userPrefName); }
+
+void ShowViewMenu(RunnerParams& runnerParams) { DockingDetails::ShowViewMenu(runnerParams); }
+void ShowAppMenu(RunnerParams& runnerParams) { Menu_StatusBar::ShowDefaultAppMenu_Quit(runnerParams); }
+
+HelloImGuiContext* GetCurrentContext() { return GHelloImGui; }
+
+void SetCurrentContext(HelloImGuiContext* ctx) { GHelloImGui = ctx; }
+
+static void Initialize()
 {
-    return gLastRunner->LoadUserPref(userPrefName);
+    HelloImGuiContext& h = *GHelloImGui;
+    IM_ASSERT(!h.Initialized);
+    h.Initialized = true;
 }
 
-
-void ShowViewMenu(RunnerParams & runnerParams)
+HelloImGuiContext* CreateContext()
 {
-    DockingDetails::ShowViewMenu(runnerParams);
+    HelloImGuiContext* prev_ctx = GetCurrentContext();
+    HelloImGuiContext* ctx = IM_NEW(HelloImGuiContext)();
+    SetCurrentContext(ctx);
+    Initialize();
+    if (prev_ctx != nullptr)
+        SetCurrentContext(prev_ctx);  // Restore previous context if any, else keep new one.
+    return ctx;
 }
-void ShowAppMenu(RunnerParams & runnerParams)
+
+void DestroyContext(HelloImGuiContext* ctx)
 {
-    Menu_StatusBar::ShowDefaultAppMenu_Quit(runnerParams);
+    HelloImGuiContext* prev_ctx = GetCurrentContext();
+    if (ctx == nullptr)  //-V1051
+        ctx = prev_ctx;
+    SetCurrentContext(ctx);
+    SetCurrentContext((prev_ctx != ctx) ? prev_ctx : NULL);
+    IM_DELETE(ctx);
 }
 
 }  // namespace HelloImGui

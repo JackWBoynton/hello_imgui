@@ -21,6 +21,7 @@ It demonstrates how to:
 #include "imgui_internal.h"
 
 #include <sstream>
+#include <memory>
 
 // Poor man's fix for C++ late arrival in the unicode party:
 //    - C++17: u8"my string" is of type const char*
@@ -51,6 +52,80 @@ struct MyAppSettings
     int value = 10;
 };
 
+
+// the biggest assumption here is that ALL Labels are unique
+template<typename Derived>
+struct View : public HelloImGui::DockableWindow {
+    void Render() { static_cast<Derived*>(this)->Render(); }
+
+    View(const std::string& label, const std::string& dockSpaceName): HelloImGui::DockableWindow(label, dockSpaceName, "", [this] { Render(); }) {
+        // HelloImGui::AddDockableWindow(this);
+    }
+
+    ~View() {
+        HelloImGui::RemoveDockableWindow(label);
+    }
+};
+
+
+class JacksView : public View<JacksView>
+{
+public:
+    JacksView(int ctr, std::string DockspaceName) : View<JacksView>("Jack " + std::to_string(ctr), DockspaceName) {}
+
+    void Render()
+    {
+        ImGui::Text("Jacks");
+    }
+};
+
+template<typename Derived>
+struct ViewDockspace : public HelloImGui::DockableWindow {
+
+    void Render() { static_cast<Derived*>(this)->Render(); }
+
+    ViewDockspace(const std::string& label, const std::string& dockSpaceName, HelloImGui::DockingParams docking_params) : HelloImGui::DockableWindow(label, dockSpaceName, "", [this] { Render(); }) {
+        dockingParams = docking_params;
+        // HelloImGui::AddDockableWindow(this);
+    }
+
+    ~ViewDockspace() {
+        HelloImGui::RemoveDockableWindow(label);
+    }
+};
+
+class Provider : public ViewDockspace<Provider>
+{
+public:
+    static constexpr auto DockspaceName = "NestedDockSpace"; // parent dockspace to put ourselves in
+    static int ctr;
+    Provider() : ViewDockspace<Provider>("Provider", DockspaceName, {{{"Provider", "ProviderCommandSpace", ImGuiDir_Down, 0.5f}}}) { }
+
+    void Render()
+    {
+        if (ImGui::Button("Add Jack"))
+        {
+            jacks.emplace_back(std::make_unique<JacksView>(ctr++, "Provider"));
+        }
+
+        int i = 0;
+        for (auto& jack : jacks)
+        {
+            if (ImGui::Button(("Focus Jack" + std::to_string(i)).c_str()))
+            {
+                jack->focusWindowAtNextFrame = true;
+            }
+            i++;
+        }
+    }
+
+    std::vector<std::unique_ptr<JacksView>> jacks;
+};
+
+int Provider::ctr = 0;
+
+static std::shared_ptr<Provider> s_provider;
+
 struct AppState
 {
     float f = 0.0f;
@@ -80,7 +155,8 @@ struct AppState
 //////////////////////////////////////////////////////////////////////////
 void LoadFonts(AppState& appState) // This is called by runnerParams.callbacks.LoadAdditionalFonts
 {
-    auto runnerParams = HelloImGui::GetRunnerParams();
+	auto runnerParams = HelloImGui::GetRunnerParams();
+	runnerParams->dpiAwareParams.onlyUseFontDpiResponsive=true;
 
     runnerParams->callbacks.defaultIconFont = HelloImGui::DefaultIconFont::FontAwesome6;
     // First, load the default font (the default font should be loaded first)
@@ -89,15 +165,17 @@ void LoadFonts(AppState& appState) // This is called by runnerParams.callbacks.L
     appState.TitleFont = HelloImGui::LoadFont("fonts/DroidSans.ttf", 18.f);
 
     HelloImGui::FontLoadingParams fontLoadingParamsEmoji;
+    fontLoadingParamsEmoji.useFullGlyphRange = true;
     appState.EmojiFont = HelloImGui::LoadFont("fonts/NotoEmoji-Regular.ttf", 24.f, fontLoadingParamsEmoji);
 
     HelloImGui::FontLoadingParams fontLoadingParamsLargeIcon;
+    fontLoadingParamsLargeIcon.useFullGlyphRange = true;
     appState.LargeIconFont = HelloImGui::LoadFont("fonts/fontawesome-webfont.ttf", 24.f, fontLoadingParamsLargeIcon);
 #ifdef IMGUI_ENABLE_FREETYPE
     // Found at https://www.colorfonts.wtf/
     HelloImGui::FontLoadingParams fontLoadingParamsColor;
     fontLoadingParamsColor.loadColor = true;
-    appState.ColorFont = HelloImGui::LoadFont("fonts/Playbox/Playbox-FREE.otf", 24.f, fontLoadingParamsColor);
+    appState.ColorFont = HelloImGui::LoadFont("fonts/Playbox/Playbox-FREE.otf", 24.f, fontLoadingParamsColor);kVX
 #endif
 }
 
@@ -116,6 +194,7 @@ std::string MyAppSettingsToString(const MyAppSettings& myAppSettings)
     json j;
     j["motto"] = HelloImGui::InputTextDataToString(myAppSettings.motto);
     j["value"] = myAppSettings.value;
+    j["num_jacks"] = Provider::ctr;
     return j.dump();
 }
 MyAppSettings StringToMyAppSettings(const std::string& s)
@@ -127,7 +206,12 @@ MyAppSettings StringToMyAppSettings(const std::string& s)
     try {
         json j = json::parse(s);
         myAppSettings.motto = HelloImGui::InputTextDataFromString(j["motto"].get<std::string>());
-        myAppSettings.value = j["value"];
+        myAppSettings.value = j.value("value", 10); // default value is 10
+        Provider::ctr = j.value("num_jacks", 0); // default value is 0
+        if (!s_provider)
+            s_provider = std::make_shared<Provider>();
+        for (int i = 0; i < Provider::ctr; i++)
+            s_provider->jacks.emplace_back(std::make_unique<JacksView>(i, "Provider"));
     }
     catch (json::exception& e)
     {
@@ -191,19 +275,27 @@ void DemoShowAdditionalWindow(AppState& appState)
     //     HelloImGui::AddDockableWindow()
     // Note: you should not modify manually the content of runnerParams.dockingParams.dockableWindows
     //       (since HelloImGui is constantly looping on it)
+
     ShowTitle(appState, "Dynamically add window");
 
     const char* windowName = "Additional Window";
     if (ImGui::Button("Show additional window"))
     {
-        HelloImGui::DockableWindow additionalWindow;
-        additionalWindow.label = "Additional Window";
-        additionalWindow.includeInViewMenu = false;       // this window is not shown in the view menu,
-        additionalWindow.rememberIsVisible = false;       // its visibility is not saved in the settings file,
-        additionalWindow.dockSpaceName = "MiscSpace";     // when shown, it will appear in MiscSpace.
-        additionalWindow.GuiFunction = [] { ImGui::Text("This is the additional window"); };
+        static std::shared_ptr<HelloImGui::DockableWindow> s_additionalWindow;
+        if (!s_additionalWindow)
+        {
+            s_additionalWindow = std::make_shared<HelloImGui::DockableWindow>();
+            s_additionalWindow->label = windowName;
+            s_additionalWindow->includeInViewMenu = false; // do not include in the View menu
+            s_additionalWindow->rememberIsVisible = false; // do not remember if the window is visible
+            s_additionalWindow->dockSpaceName = "MiscSpace"; // dock space to put the window in
+            s_additionalWindow->GuiFunction = [] {
+                ImGui::Text("This is the additional window");
+            };
+        }
+
         HelloImGui::AddDockableWindow(
-            additionalWindow,
+            s_additionalWindow,
             false  // forceDockspace=false: means that the window will be docked to the last space it was docked to
             // i.e. dockSpaceName is ignored if the user previously moved the window to another space
         );
@@ -502,7 +594,7 @@ void DemoFonts(AppState& appState)
 #ifdef IMGUI_ENABLE_FREETYPE
     ImGui::Text("Colored Fonts");
     ImGui::PushFont(appState.ColorFont);
-    ImGui::Text("COLOR!");
+    ImGui::Text("C O L O R !");
     ImGui::PopFont();
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Example with Playbox-FREE.otf font");
@@ -712,51 +804,140 @@ std::vector<HelloImGui::DockingSplit> CreateAlternativeDockingSplits()
     return splits;
 }
 
+std::vector<HelloImGui::DockingSplit> CreateNestedDockingSplits() {
+    HelloImGui::DockingSplit splitMainTop;
+    splitMainTop.initialDock = "NestedDockSpace";
+    splitMainTop.newDock = "NestedDockSpaceTop";
+    splitMainTop.direction = ImGuiDir_Up;
+    splitMainTop.ratio = 0.5f;
+
+    return {splitMainTop};
+}
+
+static std::shared_ptr<HelloImGui::DockableWindow> s_nestedWindow1;
+static std::shared_ptr<HelloImGui::DockableWindow> s_nestedWindow2;
+
+std::vector<std::shared_ptr<HelloImGui::DockableWindow>> CreateNestedDockableWindows(AppState& appState) {
+    static bool first = true;
+    if (first) {
+        first = false;
+
+        s_nestedWindow1 = std::make_shared<HelloImGui::DockableWindow>();
+        s_nestedWindow1->label = "Nested Window 1";
+        s_nestedWindow1->dockSpaceName = "NestedDockSpaceTop";
+        s_nestedWindow1->GuiFunction = [] { ImGui::Text("This is the first nested window"); };
+        
+        s_nestedWindow2 = std::make_shared<HelloImGui::DockableWindow>();
+        s_nestedWindow2->label = "Nested Window 2";
+        s_nestedWindow2->dockSpaceName = "NestedDockSpace";
+        s_nestedWindow2->GuiFunction = [&] { 
+            ImGui::Text("This is the second nested window"); 
+            if (!s_provider && ImGui::Button("Add Provider"))
+                s_provider = std::make_shared<Provider>();
+        };
+    }
+
+    return {s_nestedWindow1, s_nestedWindow2};
+}
+
 //
 // 2. Define the Dockable windows
 //
-std::vector<HelloImGui::DockableWindow> CreateDockableWindows(AppState& appState)
+static std::shared_ptr<HelloImGui::DockableWindow> s_featuresDemoWindow;
+static std::shared_ptr<HelloImGui::DockableWindow> s_layoutCustomizationWindow;
+static std::shared_ptr<HelloImGui::DockableWindow> s_logsWindow;
+static std::shared_ptr<HelloImGui::DockableWindow> s_dearImGuiDemoWindow;
+static std::shared_ptr<HelloImGui::DockableWindow> s_alternativeThemeWindow;
+static std::shared_ptr<HelloImGui::DockableWindow> s_nestedDockspaceWindow;
+
+
+std::vector<std::shared_ptr<HelloImGui::DockableWindow>> CreateDockableWindows(AppState& appState)
 {
-    // A window named "FeaturesDemo" will be placed in "CommandSpace". Its Gui is provided by "GuiWindowDemoFeatures"
-    HelloImGui::DockableWindow featuresDemoWindow;
-    featuresDemoWindow.label = "Features Demo";
-    featuresDemoWindow.dockSpaceName = "CommandSpace";
-    featuresDemoWindow.GuiFunction = [&] { GuiWindowDemoFeatures(appState); };
+    static bool first = true;
+    if (first)
+    {
+        first = false;
+        // A window named "FeaturesDemo" will be placed in "CommandSpace". Its Gui is provided by "GuiWindowDemoFeatures"
+        s_featuresDemoWindow = std::make_shared<HelloImGui::DockableWindow>();
+        s_featuresDemoWindow->label = "Features Demo";
+        s_featuresDemoWindow->dockSpaceName = "CommandSpace";
+        s_featuresDemoWindow->GuiFunction = [&] { GuiWindowDemoFeatures(appState); };
 
-    // A layout customization window will be placed in "MainDockSpace". Its Gui is provided by "GuiWindowLayoutCustomization"
-    HelloImGui::DockableWindow layoutCustomizationWindow;
-    layoutCustomizationWindow.label = "Layout customization";
-    layoutCustomizationWindow.dockSpaceName = "MainDockSpace";
-    layoutCustomizationWindow.GuiFunction = [&appState]() { GuiWindowLayoutCustomization(appState); };
+        // A layout customization window will be placed in "MainDockSpace". Its Gui is provided by "GuiWindowLayoutCustomization"
+        s_layoutCustomizationWindow = std::make_shared<HelloImGui::DockableWindow>();
+        s_layoutCustomizationWindow->label = "Layout customization";
+        s_layoutCustomizationWindow->dockSpaceName = "MainDockSpace";
+        s_layoutCustomizationWindow->GuiFunction = [&appState]() { GuiWindowLayoutCustomization(appState); };
 
-    // A Log window named "Logs" will be placed in "MiscSpace". It uses the HelloImGui logger gui
-    HelloImGui::DockableWindow logsWindow;
-    logsWindow.label = "Logs";
-    logsWindow.dockSpaceName = "MiscSpace";
-    logsWindow.GuiFunction = [] { HelloImGui::LogGui(); };
+        // A Log window named "Logs" will be placed in "MiscSpace". It uses the HelloImGui logger gui
+        s_logsWindow = std::make_shared<HelloImGui::DockableWindow>();
+        s_logsWindow->label = "Logs";
+        s_logsWindow->dockSpaceName = "MiscSpace";
+        s_logsWindow->GuiFunction = [] { HelloImGui::LogGui(); };
 
-    // A Window named "Dear ImGui Demo" will be placed in "MainDockSpace"
-    HelloImGui::DockableWindow dearImGuiDemoWindow;
-    dearImGuiDemoWindow.label = "Dear ImGui Demo";
-    dearImGuiDemoWindow.dockSpaceName = "MainDockSpace";
-    dearImGuiDemoWindow.imGuiWindowFlags = ImGuiWindowFlags_MenuBar;
-    dearImGuiDemoWindow.GuiFunction = [] { ImGui::ShowDemoWindow(); };
+        // A Window named "Dear ImGui Demo" will be placed in "MainDockSpace"
+        s_dearImGuiDemoWindow = std::make_shared<HelloImGui::DockableWindow>();
+        s_dearImGuiDemoWindow->label = "Dear ImGui Demo";
+        s_dearImGuiDemoWindow->dockSpaceName = "MainDockSpace";
+        s_dearImGuiDemoWindow->imGuiWindowFlags = ImGuiWindowFlags_MenuBar;
+        s_dearImGuiDemoWindow->GuiFunction = [] { ImGui::ShowDemoWindow(); };
 
-    // alternativeThemeWindow
-    HelloImGui::DockableWindow alternativeThemeWindow;
-    // Since this window applies a theme, We need to call "ImGui::Begin" ourselves so
-    // that we can apply the theme before opening the window.
-    alternativeThemeWindow.callBeginEnd = false;
-    alternativeThemeWindow.label = "Alternative Theme";
-    alternativeThemeWindow.dockSpaceName = "CommandSpace2";
-    alternativeThemeWindow.GuiFunction = [&appState]() { GuiWindowAlternativeTheme(appState); };
+        // alternativeThemeWindow
+        // Since this window applies a theme, We need to call "ImGui::Begin" ourselves so
+        // that we can apply the theme before opening the window.
+        s_alternativeThemeWindow = std::make_shared<HelloImGui::DockableWindow>();
+        s_alternativeThemeWindow->callBeginEnd = false;
+        s_alternativeThemeWindow->label = "Alternative Theme";
+        s_alternativeThemeWindow->dockSpaceName = "CommandSpace2";
+        s_alternativeThemeWindow->GuiFunction = [&appState]() { GuiWindowAlternativeTheme(appState); };
 
-    std::vector<HelloImGui::DockableWindow> dockableWindows {
-        featuresDemoWindow,
-        layoutCustomizationWindow,
-        logsWindow,
-        dearImGuiDemoWindow,
-        alternativeThemeWindow
+        // Add another window that acts as a dockspace
+        // This window will be used to demonstrate nested dockspaces
+        s_nestedDockspaceWindow = std::make_shared<HelloImGui::DockableWindow>();
+        s_nestedDockspaceWindow->label = "NestedDockSpace";
+        s_nestedDockspaceWindow->dockSpaceName = "MainDockSpace";
+        s_nestedDockspaceWindow->GuiFunction = [] { 
+            ImGui::Text("This is the nested dockspace window");
+            static bool hasDockableWindow = false;
+            if (!hasDockableWindow && ImGui::Button("Add dockable window")) {
+                hasDockableWindow = true;
+                static std::shared_ptr<HelloImGui::DockableWindow> s_newDockableWindow;
+                if (!s_newDockableWindow)
+                    s_newDockableWindow = std::make_shared<HelloImGui::DockableWindow>();
+                s_newDockableWindow->label = "New Dockable Window";
+                s_newDockableWindow->dockSpaceName = "NestedDockSpace asdf";
+                s_newDockableWindow->GuiFunction = [] { ImGui::Text("This is a new dockable window"); };
+                HelloImGui::AddDockableWindow(s_newDockableWindow);
+            }
+
+            if (!hasDockableWindow && ImGui::Button("Add window (invalid dockspace)")) {
+                hasDockableWindow = true;
+                static std::shared_ptr<HelloImGui::DockableWindow> s_newDockableWindow;
+                if (!s_newDockableWindow)
+                    s_newDockableWindow = std::make_shared<HelloImGui::DockableWindow>();
+                s_newDockableWindow->label = "New Dockable Window";
+                s_newDockableWindow->dockSpaceName = "asdf";
+                s_newDockableWindow->GuiFunction = [] { ImGui::Text("This is a new (invalid dockspace) dockable window"); };
+                HelloImGui::AddDockableWindow(s_newDockableWindow);
+            }
+
+            if (hasDockableWindow && ImGui::Button("Remove dockable window")) {
+                HelloImGui::RemoveDockableWindow("New Dockable Window");
+                hasDockableWindow = false;
+            }
+        };
+        s_nestedDockspaceWindow->dockingParams.dockingSplits = CreateNestedDockingSplits();
+        s_nestedDockspaceWindow->dockingParams.dockableWindows = CreateNestedDockableWindows(appState);
+        s_nestedDockspaceWindow->dockingParams.mainDockSpaceNodeFlags = ImGuiDockNodeFlags_None;   
+    }
+
+    std::vector<std::shared_ptr<HelloImGui::DockableWindow>> dockableWindows {
+        s_featuresDemoWindow,
+        s_layoutCustomizationWindow,
+        s_logsWindow,
+        s_dearImGuiDemoWindow,
+        s_alternativeThemeWindow,
+        s_nestedDockspaceWindow
     };
     return dockableWindows;
 }
@@ -789,7 +970,7 @@ std::vector<HelloImGui::DockingParams> CreateAlternativeLayouts(AppState& appSta
         tabsLayout.dockableWindows = CreateDockableWindows(appState);
         // Force all windows to be presented in the MainDockSpace
         for (auto& window: tabsLayout.dockableWindows)
-            window.dockSpaceName = "MainDockSpace";
+            window->dockSpaceName = "MainDockSpace";
         // In "Tabs Layout", no split is created
         tabsLayout.dockingSplits = {};
     }
@@ -916,7 +1097,7 @@ int main(int, char**)
 
     // uncomment the next line if you want to always start with the layout defined in the code
     //     (otherwise, modifications to the layout applied by the user layout will be remembered)
-    // runnerParams.dockingParams.layoutCondition = HelloImGui::DockingLayoutCondition::ApplicationStart;
+    runnerParams.dockingParams.layoutCondition = HelloImGui::DockingLayoutCondition::FirstUseEver;
 
     //###############################################################################################
     // Part 3: Where to save the app settings
@@ -934,7 +1115,7 @@ int main(int, char**)
     //     Note: AppUserConfigFolder is:
     //         AppData under Windows (Example: C:\Users\[Username]\AppData\Roaming)
     //         ~/.config under Linux
-    //         "~/Library/Application Support" under macOS or iOS
+            // "~/Library/Application Support" under macOS or iOS
     runnerParams.iniFolderType = HelloImGui::IniFolderType::AppUserConfigFolder;
 
     // runnerParams.iniFilename: this will be the name of the ini file in which the settings
@@ -949,7 +1130,7 @@ int main(int, char**)
     //###############################################################################################
     // Part 4: Run the app
     //###############################################################################################
-    HelloImGui::DeleteIniSettings(runnerParams);
+    // HelloImGui::DeleteIniSettings(runnerParams);
 
     // Optional: choose the backend combination
     // ----------------------------------------
