@@ -1,6 +1,6 @@
 #include "hello_imgui/hello_imgui_logger.h"
-#include "hello_imgui/hello_imgui.h"
 #include "hello_imgui/internal/imguial_term.h"
+#include "hello_imgui/hello_imgui.h"
 
 namespace HelloImGui
 {
@@ -11,7 +11,7 @@ namespace InternalLogBuffer
     char gLogBuffer_[gMaxBufferSize];
     ImGuiAl::Log gLog(gLogBuffer_, gMaxBufferSize);
 
-}  // namespace InternalLogBuffer
+}
 
 void Log(LogLevel level, char const* const format, ...)
 {
@@ -32,8 +32,15 @@ void Log(LogLevel level, char const* const format, ...)
     va_end(args);
 }
 
-void LogClear() { InternalLogBuffer::gLog.clear(); }
+void LogClear()
+{
+    InternalLogBuffer::gLog.clear();
+}
 
-void LogGui(ImVec2 size, bool minimal) { InternalLogBuffer::gLog.draw(size, minimal); }
+void LogGui(ImVec2 size)
+{
+    InternalLogBuffer::gLog.draw(size);
+}
 
 }  // namespace HelloImGui
+

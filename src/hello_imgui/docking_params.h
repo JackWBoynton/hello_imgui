@@ -1,13 +1,12 @@
 #pragma once
-#include "hello_imgui/runner_callbacks.h"
 #include "imgui.h"
+#include "hello_imgui/runner_callbacks.h"
 #include <functional>
-#include <memory>
+#include <string>
+#include <vector>
+#include <utility>
 #include <optional>
 #include <stdio.h>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace HelloImGui
 {
@@ -25,8 +24,7 @@ HelloImGui will then provide a "View" menu with options to show/hide the dockabl
 
 ![demo docking](https://traineq.org/ImGuiBundle/HelloImGuiLayout.gif)
 
-* Source for this example:
-https://github.com/pthom/hello_imgui/tree/master/src/hello_imgui_demos/hello_imgui_demodocking
+* Source for this example: https://github.com/pthom/hello_imgui/tree/master/src/hello_imgui_demos/hello_imgui_demodocking
 * [Video explanation on YouTube](https://www.youtube.com/watch?v=XKxmz__F4ow) (5 minutes)
 
 
@@ -161,6 +159,7 @@ HelloImGui::Run(runnerParams);
 // where windows can be docked.
 using DockSpaceName = std::string;
 
+
 // @@md#DockingSplit
 
 // DockingSplit is a struct that defines the way the docking splits should
@@ -249,6 +248,7 @@ struct DockingParams
     //  Only used in advanced cases, when several layouts are available.
     std::string layoutName = "Default";
 
+
     // --------------- Options -----------------------------
 
     // `mainDockSpaceNodeFlags`: _ImGuiDockNodeFlags (enum),
@@ -258,6 +258,7 @@ struct DockingParams
     //  Most flags are inherited by children dock spaces.
     //  You can also set flags for specific dock spaces via `DockingSplit.nodeFlags`
     ImGuiDockNodeFlags mainDockSpaceNodeFlags = ImGuiDockNodeFlags_PassthruCentralNode;
+
 
     // --------------- Layout handling -----------------------------
 
@@ -272,6 +273,7 @@ struct DockingParams
     //  Reset layout on next frame, i.e. drop the layout customizations which were
     //  applied manually by the user. layoutReset will be reset to false after this.
     bool layoutReset = false;
+
 
     // --------------- Helper Methods -----------------------------
 

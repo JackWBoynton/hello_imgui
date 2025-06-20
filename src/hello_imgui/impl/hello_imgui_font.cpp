@@ -18,7 +18,6 @@
 #endif
 
 
-
 namespace HelloImGui
 {
     float WindowContentScale()
@@ -79,11 +78,12 @@ namespace HelloImGui
     ImFont* _LoadFontImpl(const std::string & fontFilename, const float fontSize_, const FontLoadingParams& params_)
     {
         FontLoadingParams params = params_;
-
         float fontSize = fontSize_;
+
         Priv_CopyDebugFontNameToFontConfig(fontFilename, fontSize_, &params.fontConfig);
 
-        if (params.adjustSizeToDpi) {
+        if (params.adjustSizeToDpi)
+        {
             // May be load the font at a different size depending on the DPI
             float fontLoadingFactor = GetDpiAwareParams()->DpiFontLoadingFactor();
             fontSize = fontSize * fontLoadingFactor;
@@ -92,7 +92,11 @@ namespace HelloImGui
         if (params.loadColor)
         {
 #ifdef IMGUI_ENABLE_FREETYPE
-            params.fontConfig.FontLoaderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+#if IMGUI_VERSION_NUM >= 19198
+            params.fontConfig.FontLoaderFlags |= ImGuiFreeTypeLoaderFlags_LoadColor;
+#else
+            params.fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+#endif
 #else
             IM_ASSERT(false && "FontLoadingParmas.loadColor requires freetype (IMGUI_ENABLE_FREETYPE)");
             return nullptr;
@@ -118,11 +122,11 @@ namespace HelloImGui
         return font;
     }
 
-
 	ImFont* LoadFont(const std::string & fontFilename, float fontSize_, const FontLoadingParams& params_)
 	{
 		return _LoadFontImpl(fontFilename, fontSize_, params_);
 	}
+
 
     ImFont* LoadFontTTF(const std::string & fontFilename, float fontSize, ImFontConfig config)
     {
@@ -140,18 +144,7 @@ namespace HelloImGui
         FontLoadingParams fontLoadingParams;
         fontLoadingParams.fontConfig = configFont;
         ImFont* font = LoadFont(fontFilename, fontSize, fontLoadingParams);
-        return font;
-    }
 
-    ImFont* MergeFontAwesomeToLastFont(float fontSize, ImFontConfig config)
-    {
-        static std::string faFile = "fonts/fontawesome-webfont.ttf";
-
-        FontLoadingParams fontLoadingParams;
-        fontLoadingParams.mergeToLastFont = true;
-        fontLoadingParams.fontConfig = config;
-
-        ImFont* font = LoadFont(faFile, fontSize, fontLoadingParams);
         // Add FontAwesome4 icons
         {
             static std::string faFile = "fonts/fontawesome-webfont.ttf";
@@ -159,6 +152,8 @@ namespace HelloImGui
             fontLoadingParamsFa.mergeToLastFont = true;
             font = LoadFont(faFile, fontSize, fontLoadingParamsFa);
         }
+
         return font;
     }
+
 }

@@ -2,15 +2,19 @@
 #include "hello_imgui/hello_imgui_widgets.h"
 #include "hello_imgui/dpi_aware.h"
 #include "imgui.h"
-#include "imgui_internal.h"
 #include "imgui_stdlib.h"
+#include "imgui_internal.h"
 #include "nlohmann/json.hpp"
 
 #include <unordered_map>
 
+
 namespace HelloImGui
 {
-void BeginGroupColumn() { ImGui::BeginGroup(); }
+    void BeginGroupColumn()
+    {
+        ImGui::BeginGroup();
+    }
 
 void EndGroupColumn()
 {
@@ -18,11 +22,12 @@ void EndGroupColumn()
     ImGui::SameLine();
 }
 
+
 struct WidgetResizingState_
 {
-    bool Resizing = false;
-    bool MouseInResizingZone = false;
-    bool MouseDown = false;
+        bool   Resizing = false;
+        bool   MouseInResizingZone = false;
+        bool   MouseDown = false;
     ImVec2 MousePosition = ImVec2();
 };
 
@@ -35,11 +40,14 @@ static WidgetResizingState_* GetWidgetResizingState_(ImGuiID widget_id)
     return &gWidgetResizingStates.at(widget_id);
 }
 
-ImVec2 WidgetWithResizeHandle(const char* id,
+
+    ImVec2 WidgetWithResizeHandle(
+        const char* id,
                               VoidFunction widgetGuiFunction,
                               float handleSizeEm,
                               std::optional<VoidFunction> onItemResized,
-                              std::optional<VoidFunction> onItemHovered)
+        std::optional<VoidFunction> onItemHovered
+    )
 {
     widgetGuiFunction();
 
@@ -55,23 +63,21 @@ ImVec2 WidgetWithResizeHandle(const char* id,
     float em = ImGui::GetFontSize(), size = em * handleSizeEm;
     ImVec2 widget_bottom_right = ImGui::GetItemRectMax();
 
-    ImVec2 br(widget_bottom_right), bl(br.x - size, br.y), tr(br.x, br.y - size),
-        tl(br.x - size, br.y - size);
+        ImVec2 br(widget_bottom_right), bl(br.x - size, br.y), tr(br.x, br.y - size), tl(br.x - size, br.y - size);
     ImRect zone = ImRect(tl, br);
 
     //
     // Get and update resizing state
     //
     WidgetResizingState_* resizingState = GetWidgetResizingState_(widget_id);
-    WidgetResizingState_ previousResizingState = *resizingState;  // This is a copy
+    WidgetResizingState_ previousResizingState = *resizingState; // This is a copy
 
     resizingState->MousePosition = ImGui::GetIO().MousePos;
     resizingState->MouseInResizingZone = ImGui::IsMouseHoveringRect(zone.Min, zone.Max);
     resizingState->MouseDown = ImGui::IsMouseDown(0);
 
     bool wasMouseJustClicked = !previousResizingState.MouseDown && resizingState->MouseDown;
-    bool mouseInZoneBeforeAfter =
-        previousResizingState.MouseInResizingZone && resizingState->MouseInResizingZone;
+    bool mouseInZoneBeforeAfter = previousResizingState.MouseInResizingZone && resizingState->MouseInResizingZone;
 
     ImVec2 mouseDelta = resizingState->MousePosition - previousResizingState.MousePosition;
 
@@ -123,6 +129,7 @@ ImVec2 WidgetWithResizeHandle(const char* id,
     return widget_size;
 }
 
+
 static void setDefaultSizeIfNone(InputTextData* textInput)
 {
     if (textInput->SizeEm.x == 0 && textInput->SizeEm.y == 0)
@@ -152,8 +159,7 @@ bool InputTextResizable(const char* label, InputTextData* textInput)
     {
         if (textInput->Multiline)
         {
-            changed = ImGui::InputTextMultiline(
-                inputLabel.c_str(), &textInput->Text, HelloImGui::EmToVec2(textInput->SizeEm));
+                changed = ImGui::InputTextMultiline(inputLabel.c_str(), &textInput->Text, HelloImGui::EmToVec2(textInput->SizeEm));
         }
         else
         {
@@ -161,8 +167,7 @@ bool InputTextResizable(const char* label, InputTextData* textInput)
             if (textInput->Hint.empty())
                 changed = ImGui::InputText(inputLabel.c_str(), &textInput->Text);
             else
-                changed =
-                    ImGui::InputTextWithHint(inputLabel.c_str(), textInput->Hint.c_str(), &textInput->Text);
+                    changed = ImGui::InputTextWithHint(inputLabel.c_str(), textInput->Hint.c_str(), &textInput->Text);
         }
     };
 
@@ -194,10 +199,12 @@ bool InputTextResizable(const char* label, InputTextData* textInput)
 // Serialization to/from dict
 DictTypeInputTextData InputTextDataToDict(const InputTextData& data)
 {
-    return {{"Text", data.Text},
+        return {
+            {"Text", data.Text},
             {"Multiline", data.Multiline},
             {"SizeEm_x", data.SizeEm.x},
-            {"SizeEm_y", data.SizeEm.y}};
+            {"SizeEm_y", data.SizeEm.y}
+        };
 }
 
 InputTextData InputTextDataFromDict(const DictTypeInputTextData& dict)
@@ -217,10 +224,12 @@ InputTextData InputTextDataFromDict(const DictTypeInputTextData& dict)
 // Serialization to/from string using JSON
 std::string InputTextDataToString(const InputTextData& data)
 {
-    nlohmann::json j = {{"Text", data.Text},
+        nlohmann::json j = {
+            {"Text", data.Text},
                         {"Multiline", data.Multiline},
                         {"SizeEm_x", data.SizeEm.x},
-                        {"SizeEm_y", data.SizeEm.y}};
+            {"SizeEm_y", data.SizeEm.y}
+        };
     return j.dump();
 }
 
@@ -228,10 +237,10 @@ InputTextData InputTextDataFromString(const std::string& str)
 {
     nlohmann::json j = nlohmann::json::parse(str);
     InputTextData result;
-    result.Text = j.value("Text", std::string{});
-    result.Multiline = j.value("Multiline", false);
-    result.SizeEm.x = j.value("SizeEm_x", 0.0f);
-    result.SizeEm.y = j.value("SizeEm_y", 0.0f);
+        result.Text = j["Text"];
+        result.Multiline = j["Multiline"];
+        result.SizeEm.x = j["SizeEm_x"];
+        result.SizeEm.y = j["SizeEm_y"];
     return result;
 }
-}  // namespace HelloImGui
+}

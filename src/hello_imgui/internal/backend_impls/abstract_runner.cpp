@@ -219,6 +219,13 @@ void AbstractRunner::ChangeWindowSize(HelloImGui::ScreenSize windowSize)
     mBackendWindowHelper->SetWindowBounds(mWindow, bounds);
 }
 
+void AbstractRunner::UseWindowFullMonitorWorkArea()
+{
+    auto screenBounds = mGeometryHelper->GetCurrentMonitorWorkArea(mBackendWindowHelper.get(),mWindow);
+    this->setWasWindowResizedByCodeDuringThisFrame();
+    mBackendWindowHelper->SetWindowBounds(mWindow, screenBounds);
+}
+
 bool AbstractRunner::ShallSizeWindowRelativeTo96Ppi() 
 {
     bool shallSizeRelativeTo96Ppi;
@@ -253,6 +260,9 @@ void ReadDpiAwareParams(DpiAwareParams* dpiAwareParams)
     // - `dpiWindowSizeFactor`:
     //        factor by which window size should be multiplied
     //
+    //    By default, Hello ImGui will compute it automatically,
+    //    when dpiWindowSizeFactor is set to 0.
+    //
     // How to set manually:
     // ---------------------------------
     // If it fails (i.e. your window and/or fonts are too big or too small),
@@ -275,6 +285,7 @@ void ReadDpiAwareParams(DpiAwareParams* dpiAwareParams)
         if (dpiWindowSizeFactor.has_value())
             dpiAwareParams->dpiWindowSizeFactor = dpiWindowSizeFactor.value();
     }
+
 }
 
 
@@ -285,10 +296,9 @@ void _LogDpiParams(const std::string& origin, const HelloImGui::DpiAwareParams& 
 	DpiLog("DpiAwareParams: %s\n", origin.c_str());
 	DpiLog("    dpiWindowSizeFactor=%f\n", dpiAwareParams.dpiWindowSizeFactor);
 	DpiLog("    DpiFontLoadingFactor()=%f\n", dpiAwareParams.DpiFontLoadingFactor());
-	DpiLog("        (ImGui FontGlobalScale: %f)\n", io.FontGlobalScale);
+	DpiLog("        (ImGui FontScaleMain: %f)\n", ImGui::GetStyle().FontScaleMain);
 	DpiLog("	    (ImGui DisplayFramebufferScale=%f, %f)\n", io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
 }
-
 
 
 void AbstractRunner::SetupDpiAwareParams()
@@ -319,6 +329,9 @@ void AbstractRunner::MakeWindowSizeRelativeTo96Ppi_IfRequired()
         {
             auto bounds = mBackendWindowHelper->GetWindowBounds(mWindow);
 
+            auto monitorBounds =
+                (mGeometryHelper->GetCurrentMonitorWorkArea(mBackendWindowHelper.get(), mWindow));
+
             // update size
             bounds.size = {(int)((float)bounds.size[0] * scaleFactor),
                            (int)((float)bounds.size[1] * scaleFactor)};
@@ -327,7 +340,6 @@ void AbstractRunner::MakeWindowSizeRelativeTo96Ppi_IfRequired()
             if (   (params.appWindowParams.windowGeometry.positionMode == HelloImGui::WindowPositionMode::MonitorCenter)
                 || (params.appWindowParams.windowGeometry.positionMode == HelloImGui::WindowPositionMode::OsDefault))
             {
-                auto monitorBounds = (mGeometryHelper->GetCurrentMonitorWorkArea(mBackendWindowHelper.get(), mWindow));
                 ForDim2(dim)
                     bounds.position[dim] =
                         monitorBounds.Center()[dim] - bounds.size[dim] / 2;
@@ -338,6 +350,9 @@ void AbstractRunner::MakeWindowSizeRelativeTo96Ppi_IfRequired()
                 ForDim2(dim) 
                     bounds.position[dim] = (int)((float)bounds.position[dim] * scaleFactor);
             }
+            
+            bounds = monitorBounds.EnsureWindowFitsThisMonitor(bounds);
+
             setWasWindowResizedByCodeDuringThisFrame();
             mBackendWindowHelper->SetWindowBounds(mWindow, bounds);
         }
@@ -437,7 +452,7 @@ void AbstractRunner::InitImGuiContext()
 #endif
 }
 
-void AbstractRunner::SetImGuiPrefs()
+void AbstractRunner::CheckPrefs()
 {
     if (params.imGuiWindowParams.enableViewports)
     {
@@ -451,6 +466,14 @@ void AbstractRunner::SetImGuiPrefs()
     #else
         ImGui::GetIO().IniFilename = "";
     #endif
+
+#ifndef HELLOIMGUI_WITH_TEST_ENGINE
+    if (params.useImGuiTestEngine)
+    {
+        fprintf(stderr, "HelloImGui: RunnerParam.useImGuiTestEngine is true, but HelloImGui was not built with support for ImGui Test Engine. Disabling!\n");
+        params.useImGuiTestEngine = false;
+    }
+#endif
 }
 
 
@@ -586,7 +609,7 @@ void AbstractRunner::Setup()
     InitRenderBackendCallbacks();
 
     InitImGuiContext();
-    SetImGuiPrefs();
+    CheckPrefs();
 
     // Init platform backend (SDL, Glfw)
     Impl_InitPlatformBackend();
@@ -762,6 +785,32 @@ void AbstractRunner::RenderGui()
 
 void _UpdateFrameRateStats(); // See hello_imgui.cpp
 
+#ifdef HELLOIMGUI_HAS_OPENGL
+static std::string GetOpenGlErrorDescription(GLenum error)
+{
+    switch (error)
+    {
+        case GL_NO_ERROR:
+            return "No error";
+        case GL_INVALID_ENUM:
+            return "GL_INVALID_ENUM: An unacceptable value is specified for an enumerated argument.";
+        case GL_INVALID_VALUE:
+            return "GL_INVALID_VALUE: A numeric argument is out of range.";
+        case GL_INVALID_OPERATION:
+            return "GL_INVALID_OPERATION: The specified operation is not allowed in the current state.";
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            return "GL_INVALID_FRAMEBUFFER_OPERATION: The framebuffer object is not complete.";
+        case GL_OUT_OF_MEMORY:
+            return "GL_OUT_OF_MEMORY: There is not enough memory left to execute the command.";
+        // case GL_STACK_UNDERFLOW:
+        //     return "GL_STACK_UNDERFLOW: An attempt has been made to perform an operation that would cause an internal stack to underflow.";
+        // case GL_STACK_OVERFLOW:
+        //     return "GL_STACK_OVERFLOW: An attempt has been made to perform an operation that would cause an internal stack to overflow.";
+        default:
+            return "Unknown error";
+    }
+}
+#endif
 
 void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
 {
@@ -1043,9 +1092,25 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
             if (mIdxFrame == 0)
             {
                 auto error = glGetError();
-                if (error != 0)
+                if (error != GL_NO_ERROR)
                 {
-                    fprintf(stderr, "OpenGL error detected on first frame: %d. May be the font texture is too big\n", error);
+                    bool shall_warn = true;
+                    #ifdef IMGUI_BUNDLE_BUILD_PYODIDE
+                    if (error == GL_INVALID_OPERATION) {
+                        // We may get an error  on the first frame upon restarting a second HelloImGui app
+                        // in a row, when using Pyodide (probably a remaining texture from the previous app)
+                        // "Format and type RGB/UNSIGNED_BYTE incompatible with this RGB8 attachment..."
+                        // This is a known issue and we should not warn about it.
+                        shall_warn = false;
+                    }
+                    #endif
+                    if (shall_warn)
+                        fprintf(
+                            stderr,
+                            "OpenGL error detected on first frame: %d (%s). May be the font texture is too big\n",
+                            error,
+                            GetOpenGlErrorDescription(error).c_str()
+                        );
                 }
             }
         }
@@ -1301,7 +1366,7 @@ void AbstractRunner::OnLowMemory()
 
 void AbstractRunner::TearDown(bool gotException)
 {
-    IM_ASSERT(gotException || !mWasTearedDown && "TearDown() called twice!");
+    IM_ASSERT(!mWasTearedDown && "TearDown() called twice!");
     mWasTearedDown = true;
     if (! gotException)
     {
