@@ -5,8 +5,10 @@
 #include "hello_imgui/hello_imgui_theme.h"
 #include "hello_imgui/hello_imgui.h"
 #include "hello_imgui/internal/functional_utils.h"
+#include "hello_imgui/internal/context.h"
 #include "imgui_internal.h"
 #include "nlohmann/json.hpp"
+
 #include <map>
 #include <vector>
 #include <cassert>

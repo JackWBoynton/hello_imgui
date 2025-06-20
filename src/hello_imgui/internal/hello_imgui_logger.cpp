@@ -37,9 +37,9 @@ void LogClear()
     InternalLogBuffer::gLog.clear();
 }
 
-void LogGui(ImVec2 size)
+void LogGui(ImVec2 size, bool minimal)
 {
-    InternalLogBuffer::gLog.draw(size);
+    InternalLogBuffer::gLog.draw(size, minimal);
 }
 
 }  // namespace HelloImGui

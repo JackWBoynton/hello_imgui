@@ -33,6 +33,15 @@ enum class WindowPositionMode
     FromCoords,
 };
 
+enum class EmscriptenKeyboardElement
+{
+    Window,
+    Document,
+    Screen,
+    Canvas,
+    Default
+};
+
 
 enum class WindowSizeMeasureMode
 {
