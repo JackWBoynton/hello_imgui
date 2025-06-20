@@ -4,27 +4,27 @@ _See the [HelloImGui documentation website](https://pthom.github.io/hello_imgui/
 
 
 **OpenGL**<br/>
-[![Win_Mac_Linux](https://github.com/pthom/hello_imgui/workflows/Win_Mac_Linux/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Win_Mac_Linux.yml)
-[![MinGW](https://github.com/pthom/hello_imgui/workflows/MinGW/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/MinGW.yml)
+[![Win_Mac_Linux](https://github.com/pthom/hello_imgui/actions/workflows/Win_Mac_Linux.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Win_Mac_Linux.yml)
+[![MinGW](https://github.com/pthom/hello_imgui/actions/workflows/MinGW.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/MinGW.yml)
+
 
 **Mobile and web**<br/>
-[![iOS](https://github.com/pthom/hello_imgui/workflows/iOS/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/iOS.yml)
-[![Android](https://github.com/pthom/hello_imgui/workflows/Android/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Android.yml)
-[![Emscripten](https://github.com/pthom/hello_imgui/workflows/Emscripten/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Emscripten.yml)
+[![iOS](https://github.com/pthom/hello_imgui/actions/workflows/iOS.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/iOS.yml)
+[![Android](https://github.com/pthom/hello_imgui/actions/workflows/Android.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Android.yml)
+[![Emscripten](https://github.com/pthom/hello_imgui/actions/workflows/Emscripten.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Emscripten.yml)
 
 **Alternate rendering backends**<br/>
-[![Metal](https://github.com/pthom/hello_imgui/workflows/Metal/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Metal.yml)
-[![Vulkan](https://github.com/pthom/hello_imgui/workflows/Vulkan/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Vulkan.yml)
-[![DirectX](https://github.com/pthom/hello_imgui/workflows/DirectX/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/DirectX.yml)
+[![Metal](https://github.com/pthom/hello_imgui/actions/workflows/Metal.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Metal.yml)
+[![Vulkan](https://github.com/pthom/hello_imgui/actions/workflows/Vulkan.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Vulkan.yml)
+[![DirectX](https://github.com/pthom/hello_imgui/actions/workflows/DirectX.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/DirectX.yml)
 
 **Misc**<br/>
-[![TestEngine](https://github.com/pthom/hello_imgui/workflows/TestEngine/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/TestEngine.yml)
-[![Automate](https://github.com/pthom/hello_imgui/workflows/Automate/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Automate.yml)
-[![StarterTemplate](https://github.com/pthom/hello_imgui/workflows/StarterTemplate/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/StarterTemplate.yml)
+[![TestEngine](https://github.com/pthom/hello_imgui/actions/workflows/TestEngine.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/TestEngine.yml)
+[![Automate](https://github.com/pthom/hello_imgui/actions/workflows/Automate.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/Automate.yml)
+[![StarterTemplate](https://github.com/pthom/hello_imgui/actions/workflows/StarterTemplate.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/StarterTemplate.yml)
 
 **Vcpkg**<br/>
-[![VcpkgDeps](https://github.com/pthom/hello_imgui/workflows/VcpkgDeps/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/VcpkgDeps.yml)
-[![VcpkgPackage](https://github.com/pthom/hello_imgui/workflows/VcpkgPackage/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/VcpkgPackage.yml)
+[![VcpkgDeps](https://github.com/pthom/hello_imgui/actions/workflows/VcpkgDeps.yml/badge.svg)](https://github.com/pthom/hello_imgui/actions/workflows/VcpkgDeps.yml)
 
 # Hello ImGui
 
@@ -141,7 +141,7 @@ How to use the theme tweaking utilities provided by Hello ImGui
 
 Hello ImGui is based on [Dear ImGui](https://github.com/ocornut/imgui) (MIT License), by Omar Cornut. Portions use [ImGui Test Engine](https://github.com/ocornut/imgui_test_engine), which is governed by a [specific license](https://github.com/ocornut/imgui_test_engine/blob/main/imgui_test_engine/LICENSE.txt)
 
-Portions of this software use the [FreeType Project](https://www.freetype.org), [lunasvg](https://github.com/sammycage/lunasvg) (MIT License), [GLFW](https://www.glfw.org/) (zlib/libpng license), [SDL](https://www.libsdl.org/) (zlib license).
+Portions of this software use the [FreeType Project](https://www.freetype.org), [plutosvg](https://github.com/sammycage/plutosvg) (MIT License), [GLFW](https://www.glfw.org/) (zlib/libpng license), [SDL](https://www.libsdl.org/) (zlib license).
 
 ### License
 

@@ -166,7 +166,6 @@ namespace HelloImGui { namespace BackendApi
 
         SDL_AddEventWatch(resizingEventWatcher, window);
 
-
         return (void *)(window);
     }
 

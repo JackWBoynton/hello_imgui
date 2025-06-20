@@ -26,16 +26,14 @@ SOFTWARE.
 #pragma once
 
 #include <imgui.h>
-#include <stdarg.h>
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdint.h>
 
 #include <functional>
 
-namespace ImGuiAl
-{
-class Fifo
-{
+namespace ImGuiAl {
+class Fifo {
    public:
     Fifo(void* const buffer, size_t const size);
 
@@ -57,34 +55,30 @@ class Fifo
     size_t _last;
 };
 
-class Crt
-{
+class Crt {
    public:
-    struct CGA
-    {
-        enum : ImU32
-        {
-            Black = IM_COL32(0x00, 0x00, 0x00, 0xff),
-            Blue = IM_COL32(0x00, 0x00, 0xaa, 0xff),
-            Green = IM_COL32(0x00, 0xaa, 0x00, 0xff),
-            Cyan = IM_COL32(0x00, 0xaa, 0xaa, 0xff),
-            Red = IM_COL32(0xaa, 0x00, 0x00, 0xff),
-            Magenta = IM_COL32(0xaa, 0x00, 0xaa, 0xff),
-            Brown = IM_COL32(0xaa, 0x55, 0x00, 0xff),
-            White = IM_COL32(0xaa, 0xaa, 0xaa, 0xff),
-            Gray = IM_COL32(0x55, 0x55, 0x55, 0xff),
-            BrightBlue = IM_COL32(0x55, 0x55, 0xff, 0xff),
-            BrightGreen = IM_COL32(0x55, 0xff, 0x55, 0xff),
-            BrightCyan = IM_COL32(0x55, 0xff, 0xff, 0xff),
-            BrightRed = IM_COL32(0xff, 0x55, 0x55, 0xff),
+    struct CGA {
+        enum : ImU32 {
+            Black         = IM_COL32(0x00, 0x00, 0x00, 0xff),
+            Blue          = IM_COL32(0x00, 0x00, 0xaa, 0xff),
+            Green         = IM_COL32(0x00, 0xaa, 0x00, 0xff),
+            Cyan          = IM_COL32(0x00, 0xaa, 0xaa, 0xff),
+            Red           = IM_COL32(0xaa, 0x00, 0x00, 0xff),
+            Magenta       = IM_COL32(0xaa, 0x00, 0xaa, 0xff),
+            Brown         = IM_COL32(0xaa, 0x55, 0x00, 0xff),
+            White         = IM_COL32(0xaa, 0xaa, 0xaa, 0xff),
+            Gray          = IM_COL32(0x55, 0x55, 0x55, 0xff),
+            BrightBlue    = IM_COL32(0x55, 0x55, 0xff, 0xff),
+            BrightGreen   = IM_COL32(0x55, 0xff, 0x55, 0xff),
+            BrightCyan    = IM_COL32(0x55, 0xff, 0xff, 0xff),
+            BrightRed     = IM_COL32(0xff, 0x55, 0x55, 0xff),
             BrightMagenta = IM_COL32(0xff, 0x55, 0xff, 0xff),
-            Yellow = IM_COL32(0xff, 0xff, 0x55, 0xff),
-            BrightWhite = IM_COL32(0xff, 0xff, 0xff, 0xff)
+            Yellow        = IM_COL32(0xff, 0xff, 0x55, 0xff),
+            BrightWhite   = IM_COL32(0xff, 0xff, 0xff, 0xff)
         };
     };
 
-    struct Info
-    {
+    struct Info {
         ImU32 foregroundColor;
         unsigned length;
         unsigned metaData;
@@ -104,8 +98,7 @@ class Crt
     void draw(ImVec2 const& size = ImVec2(0.0f, 0.0f));
 
    protected:
-    void draw(ImVec2 const& size,
-              const std::function<bool(Info const& header, char const* const line)>& filter);
+    void draw(ImVec2 const& size, const std::function<bool(Info const& header, char const* const line)>& filter);
 
     Fifo _fifo;
     ImU32 _foregroundColor;
@@ -114,13 +107,11 @@ class Crt
     bool autoScrollToBotttom = false;
 };
 
-class Log : protected Crt
-{
+class Log : protected Crt {
    public:
     typedef Crt::Info Info;
 
-    enum class Level
-    {
+    enum class Level {
         Debug,
         Info,
         Warning,
@@ -140,10 +131,7 @@ class Log : protected Crt
     void error(char const* const format, va_list args);
 
     void clear() { Crt::clear(); }
-    void iterate(const std::function<bool(Info const& header, char const* const line)>& iterator) const
-    {
-        Crt::iterate(iterator);
-    }
+    void iterate(const std::function<bool(Info const& header, char const* const line)>& iterator) const { Crt::iterate(iterator); }
     void scrollToBottom() { Crt::scrollToBottom(); }
 
     int draw(ImVec2 const& size = ImVec2(0.0f, 0.0f), bool minimal = false);
@@ -172,7 +160,7 @@ class Log : protected Crt
     ImU32 _errorTextColor;
     ImU32 _errorButtonColor;
     ImU32 _errorButtonHoveredColor;
-    bool _useAutomaticColors = true;
+    bool  _useAutomaticColors = true;
 
     char const* _debugLabel;
     char const* _infoLabel;
@@ -191,8 +179,7 @@ class Log : protected Crt
     ImGuiTextFilter _filter;
 };
 
-class Terminal : protected Crt
-{
+class Terminal : protected Crt {
    public:
     typedef Crt::Info Info;
 
@@ -208,10 +195,7 @@ class Terminal : protected Crt
     void vprintf(char const* const format, va_list args) { Crt::vprintf(format, args); }
 
     void clear() { Crt::clear(); }
-    void iterate(const std::function<bool(Info const& header, char const* const line)>& iterator) const
-    {
-        Crt::iterate(iterator);
-    }
+    void iterate(const std::function<bool(Info const& header, char const* const line)>& iterator) const { Crt::iterate(iterator); }
     void scrollToBottom() { Crt::scrollToBottom(); }
 
     void draw(ImVec2 const& size = ImVec2(0.0f, 0.0f));
@@ -222,9 +206,8 @@ class Terminal : protected Crt
     std::function<void(Terminal& self, char* const command)> _execute;
 };
 
-template <size_t S>
-class BufferedCrt : public Crt
-{
+template<size_t S>
+class BufferedCrt : public Crt {
    public:
     BufferedCrt() : Crt(_buffer, S) {}
 
@@ -232,9 +215,8 @@ class BufferedCrt : public Crt
     uint8_t _buffer[S];
 };
 
-template <size_t S>
-class BufferedLog : public Log
-{
+template<size_t S>
+class BufferedLog : public Log {
    public:
     BufferedLog() : Log(_buffer, S) {}
 
@@ -242,17 +224,14 @@ class BufferedLog : public Log
     uint8_t _buffer[S];
 };
 
-template <size_t S, size_t R>
-class BufferedTerminal : public Terminal
-{
+template<size_t S, size_t R>
+class BufferedTerminal : public Terminal {
    public:
     BufferedTerminal(std::function<void(Terminal& self, char* const command)>&& execute)
-        : Terminal(_buffer, S, _commandBuffer, R, std::move(execute))
-    {
-    }
+        : Terminal(_buffer, S, _commandBuffer, R, std::move(execute)) {}
 
    protected:
     uint8_t _buffer[S];
     uint8_t _commandBuffer[R];
 };
-}  // namespace ImGuiAl
+}

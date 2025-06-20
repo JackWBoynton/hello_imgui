@@ -1,14 +1,14 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "hello_imgui/internal/docking_details.h"
-#include "hello_imgui/hello_imgui.h"
-#include "hello_imgui/hello_imgui_theme.h"
-#include "hello_imgui/internal/context.h"
-#include "hello_imgui/internal/functional_utils.h"
-#include "hello_imgui/internal/imgui_global_context.h"  // must be included before imgui_internal.h
-
 #include "imgui.h"
+#include "hello_imgui/internal/imgui_global_context.h" // must be included before imgui_internal.h
+#include "hello_imgui/hello_imgui_theme.h"
+#include "hello_imgui/hello_imgui.h"
+#include "hello_imgui/internal/functional_utils.h"
 #include "imgui_internal.h"
 #include "nlohmann/json.hpp"
+#include <map>
+#include <vector>
 #include <cassert>
 #include <map>
 #include <optional>
@@ -27,7 +27,6 @@ bool ShouldRemoteDisplay();
 
 namespace SplitIdsHelper
 {
-
     // NOTE: we need to make sure this dockspace name label usage follows ImGUi's label/ID conventions
     // like ignoring anything before the ###
     bool ContainsSplit(const DockSpaceName& dockSpaceName)
@@ -89,11 +88,15 @@ namespace SplitIdsHelper
             std::cerr << "LoadSplitIds: Unexpected error: " << e.what() << std::endl;
         }
     }
-}  // namespace SplitIdsHelper
+}
+
 
 static bool gShowTweakWindow = false;
 
-void ShowThemeTweakGuiWindow_Static() { ShowThemeTweakGuiWindow(&gShowTweakWindow); }
+void ShowThemeTweakGuiWindow_Static()
+{
+    ShowThemeTweakGuiWindow(&gShowTweakWindow);
+}
 
 void MenuTheme()
 {
@@ -117,6 +120,7 @@ void MenuTheme()
         ImGui::EndMenu();
     }
 }
+
 
 namespace DockingDetails
 {

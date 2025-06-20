@@ -37,12 +37,12 @@ ImGuiTheme_ ImGuiTheme_FromName(const char* themeName);
 ImGuiStyle ThemeToStyle(ImGuiTheme_ theme);
 void ApplyTheme(ImGuiTheme_ theme);
 
+
 struct ImGuiThemeTweaks
 {
     // Common rounding for widgets. If < 0, this is ignored.
     float Rounding = -1.f;
-    // If rounding is applied, scrollbar rounding needs to be adjusted to be visually pleasing in conjunction
-    // with other widgets roundings. Only applied if Rounding > 0.f)
+        // If rounding is applied, scrollbar rounding needs to be adjusted to be visually pleasing in conjunction with other widgets roundings. Only applied if Rounding > 0.f)
     float RoundingScrollbarRatio = 4.f;
     // Change the alpha that will be applied to windows, popups, etc. If < 0, this is ignored.
     float AlphaMultiplier = -1.f;
@@ -50,11 +50,9 @@ struct ImGuiThemeTweaks
     //
     // HSV Color tweaks
     //
-    // Change the hue of all widgets (gray widgets will remain gray, since their saturation is zero). If < 0,
-    // this is ignored.
+        // Change the hue of all widgets (gray widgets will remain gray, since their saturation is zero). If < 0, this is ignored.
     float Hue = -1.f;
-    // Multiply the saturation of all widgets (gray widgets will remain gray, since their saturation is zero).
-    // If < 0, this is ignored.
+        // Multiply the saturation of all widgets (gray widgets will remain gray, since their saturation is zero). If < 0, this is ignored.
     float SaturationMultiplier = -1.f;
     // Multiply the value (luminance) of all front widgets. If < 0, this is ignored.
     float ValueMultiplierFront = -1.f;
@@ -74,11 +72,8 @@ struct ImGuiTweakedTheme
     ImGuiTheme_ Theme = ImGuiTheme_DarculaDarker;
     ImGuiThemeTweaks Tweaks = ImGuiThemeTweaks();
 
-    ImGuiTweakedTheme(ImGuiTheme_ theme = ImGuiTheme_DarculaDarker,
-                      const ImGuiThemeTweaks& tweaks = ImGuiThemeTweaks())
-        : Theme(theme), Tweaks(tweaks)
-    {
-    }
+        ImGuiTweakedTheme(ImGuiTheme_ theme = ImGuiTheme_DarculaDarker, const ImGuiThemeTweaks& tweaks = ImGuiThemeTweaks())
+            : Theme(theme), Tweaks(tweaks) {}
 };
 
 ImGuiStyle TweakedThemeThemeToStyle(const ImGuiTweakedTheme& tweaked_theme);
@@ -104,20 +99,20 @@ void ApplyTweakedTheme(const ImGuiTweakedTheme& tweaked_theme);
 void PushTweakedTheme(const ImGuiTweakedTheme& tweaked_theme);
 void PopTweakedTheme();
 
-// Show the theme selection listbox, the theme tweak widgets, as well as ImGui::ShowStyleEditor. Returns true
-// if modified (Warning, when using ShowStyleEditor, no info about modification is transmitted)
-bool ShowThemeTweakGui(ImGuiTweakedTheme* tweaked_theme);
+    // Show the theme selection listbox, the theme tweak widgets, as well as ImGui::ShowStyleEditor. Returns true if modified (Warning, when using ShowStyleEditor, no info about modification is transmitted)
+    bool ShowThemeTweakGui(ImGuiTweakedTheme *tweaked_theme);
 
 // Some tweakable themes
 ImGuiStyle SoDark(float hue);
-ImGuiStyle ShadesOfGray(float rounding = 0.f,
-                        float value_multiplier_front = 1.f,
-                        float value_multiplier_bg = 1.f);
-ImGuiStyle Darcula(float rounding = 1.f,
-                   float hue = -1.f,
-                   float saturation_multiplier = 1.f,
-                   float value_multiplier_front = 1.f,
-                   float value_multiplier_bg = 1.f,
-                   float alpha_bg_transparency = 1.f);
+    ImGuiStyle ShadesOfGray(float rounding=0.f, float value_multiplier_front=1.f, float value_multiplier_bg=1.f);
+    ImGuiStyle Darcula(
+        float rounding=1.f,
+        float hue=-1.f,
+        float saturation_multiplier=1.f,
+        float value_multiplier_front=1.f,
+        float value_multiplier_bg=1.f,
+        float alpha_bg_transparency=1.f
+    );
 
-}  // namespace ImGuiTheme
+
+} // namespace ImGuiTheme

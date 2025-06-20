@@ -21,7 +21,6 @@ It demonstrates how to:
 #include "imgui_internal.h"
 
 #include <sstream>
-#include <memory>
 
 // Poor man's fix for C++ late arrival in the unicode party:
 //    - C++17: u8"my string" is of type const char*
@@ -155,8 +154,7 @@ struct AppState
 //////////////////////////////////////////////////////////////////////////
 void LoadFonts(AppState& appState) // This is called by runnerParams.callbacks.LoadAdditionalFonts
 {
-	auto runnerParams = HelloImGui::GetRunnerParams();
-	runnerParams->dpiAwareParams.onlyUseFontDpiResponsive=true;
+    auto runnerParams = HelloImGui::GetRunnerParams();
 
     runnerParams->callbacks.defaultIconFont = HelloImGui::DefaultIconFont::FontAwesome6;
     // First, load the default font (the default font should be loaded first)
@@ -165,17 +163,15 @@ void LoadFonts(AppState& appState) // This is called by runnerParams.callbacks.L
     appState.TitleFont = HelloImGui::LoadFont("fonts/DroidSans.ttf", 18.f);
 
     HelloImGui::FontLoadingParams fontLoadingParamsEmoji;
-    fontLoadingParamsEmoji.useFullGlyphRange = true;
     appState.EmojiFont = HelloImGui::LoadFont("fonts/NotoEmoji-Regular.ttf", 24.f, fontLoadingParamsEmoji);
 
     HelloImGui::FontLoadingParams fontLoadingParamsLargeIcon;
-    fontLoadingParamsLargeIcon.useFullGlyphRange = true;
     appState.LargeIconFont = HelloImGui::LoadFont("fonts/fontawesome-webfont.ttf", 24.f, fontLoadingParamsLargeIcon);
 #ifdef IMGUI_ENABLE_FREETYPE
     // Found at https://www.colorfonts.wtf/
     HelloImGui::FontLoadingParams fontLoadingParamsColor;
     fontLoadingParamsColor.loadColor = true;
-    appState.ColorFont = HelloImGui::LoadFont("fonts/Playbox/Playbox-FREE.otf", 24.f, fontLoadingParamsColor);kVX
+    appState.ColorFont = HelloImGui::LoadFont("fonts/Playbox/Playbox-FREE.otf", 24.f, fontLoadingParamsColor);
 #endif
 }
 
@@ -275,7 +271,6 @@ void DemoShowAdditionalWindow(AppState& appState)
     //     HelloImGui::AddDockableWindow()
     // Note: you should not modify manually the content of runnerParams.dockingParams.dockableWindows
     //       (since HelloImGui is constantly looping on it)
-
     ShowTitle(appState, "Dynamically add window");
 
     const char* windowName = "Additional Window";
@@ -594,7 +589,7 @@ void DemoFonts(AppState& appState)
 #ifdef IMGUI_ENABLE_FREETYPE
     ImGui::Text("Colored Fonts");
     ImGui::PushFont(appState.ColorFont);
-    ImGui::Text("C O L O R !");
+    ImGui::Text("COLOR!");
     ImGui::PopFont();
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Example with Playbox-FREE.otf font");
@@ -1097,7 +1092,7 @@ int main(int, char**)
 
     // uncomment the next line if you want to always start with the layout defined in the code
     //     (otherwise, modifications to the layout applied by the user layout will be remembered)
-    runnerParams.dockingParams.layoutCondition = HelloImGui::DockingLayoutCondition::FirstUseEver;
+    // runnerParams.dockingParams.layoutCondition = HelloImGui::DockingLayoutCondition::ApplicationStart;
 
     //###############################################################################################
     // Part 3: Where to save the app settings
@@ -1115,7 +1110,7 @@ int main(int, char**)
     //     Note: AppUserConfigFolder is:
     //         AppData under Windows (Example: C:\Users\[Username]\AppData\Roaming)
     //         ~/.config under Linux
-            // "~/Library/Application Support" under macOS or iOS
+    //         "~/Library/Application Support" under macOS or iOS
     runnerParams.iniFolderType = HelloImGui::IniFolderType::AppUserConfigFolder;
 
     // runnerParams.iniFilename: this will be the name of the ini file in which the settings
@@ -1130,7 +1125,7 @@ int main(int, char**)
     //###############################################################################################
     // Part 4: Run the app
     //###############################################################################################
-    // HelloImGui::DeleteIniSettings(runnerParams);
+    HelloImGui::DeleteIniSettings(runnerParams);
 
     // Optional: choose the backend combination
     // ----------------------------------------

@@ -714,6 +714,7 @@ bool RemoteDisplayHandler::ShouldRemoteDisplay()
     #endif
 }
 
+
 void RemoteDisplayHandler::Create()
 {
     if (!ShouldRemoteDisplay())
