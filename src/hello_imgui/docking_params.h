@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <memory>
 #include <optional>
 #include <stdio.h>
 
