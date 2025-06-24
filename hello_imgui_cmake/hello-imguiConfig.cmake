@@ -1,6 +1,6 @@
 include(CMakeFindDependencyMacro)
 find_dependency(imgui CONFIG REQUIRED)
-# find_dependency(glad CONFIG QUIET)
+find_dependency(plutosvg CONFIG QUIET)
 
 # Compute the installation prefix from the location of this file.
 # Assuming the config file is at: <prefix>/lib/cmake/hello_imgui/hello-imguiConfig.cmake
