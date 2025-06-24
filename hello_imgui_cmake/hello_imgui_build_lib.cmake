@@ -554,7 +554,7 @@ function(_him_fetch_and_compile_plutovg_plutosvg)
     target_include_directories(plutosvg PUBLIC $<BUILD_INTERFACE:${plutosvg_SOURCE_DIR}/source>)
     target_compile_definitions(plutosvg PUBLIC PLUTOSVG_HAS_FREETYPE PLUTOSVG_BUILD_STATIC)
     target_link_libraries(plutosvg PUBLIC ${HIM_FREETYPE_LINKED_LIBRARY} plutovg)
-    him_add_installable_dependency(plutosvg)
+    #him_add_installable_dependency(plutosvg)
 
     set(BUILD_SHARED_LIBS ${backup_build_shared_libs})
 endfunction()
