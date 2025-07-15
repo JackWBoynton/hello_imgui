@@ -1,26 +1,23 @@
 #include "hello_imgui/imgui_default_settings.h"
+#include "hello_imgui/hello_imgui.h"
 #include "hello_imgui/hello_imgui_assets.h"
 #include "hello_imgui/hello_imgui_font.h"
-#include "hello_imgui/hello_imgui.h"
-
 
 namespace HelloImGui
 {
 
-
 namespace ImGuiDefaultSettings
 {
-
 
     void LoadDefaultFont_WithFontAwesomeIcons()
     {
         auto runnerParams = HelloImGui::GetRunnerParams();
         auto defaultIconFont = runnerParams->callbacks.defaultIconFont;
-        float fontSize = 18.f;
+        float fontSize = 24.f;
 
         std::string fontFilename = "fonts/jetbrains.ttf";
 
-    if ( ! HelloImGui::AssetExists(fontFilename))
+        if (!HelloImGui::AssetExists(fontFilename))
         {
             ImGui::GetIO().Fonts->AddFontDefault();
             return;
@@ -45,12 +42,12 @@ namespace ImGuiDefaultSettings
         else
             return;
 
-    if ( ! HelloImGui::AssetExists(iconFontFile))
+        if (!HelloImGui::AssetExists(iconFontFile))
             return;
 
-    fontParams.mergeToLastFont = true;
-    LoadFont(iconFontFile, fontSize, fontParams);
-}
+        fontParams.mergeToLastFont = true;
+        LoadFont(iconFontFile, fontSize, fontParams);
+    }
 
     void SetupDefaultImGuiConfig()
     {
@@ -60,7 +57,8 @@ namespace ImGuiDefaultSettings
         // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
         // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
-    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+        // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform
+        // Windows
 
         // io.ConfigViewportsNoAutoMerge = true;
         // io.ConfigViewportsNoTaskBarIcon = true;
