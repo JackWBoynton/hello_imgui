@@ -18,12 +18,12 @@ namespace HelloImGui
         // Specific to Vulkan
         VkDescriptorSet DS;
         static constexpr int Channels = 4; // We intentionally only support RGBA for now
-        VkImageView     ImageView = nullptr;
-        VkImage         Image = nullptr;
-        VkDeviceMemory  ImageMemory = nullptr;
-        VkSampler       Sampler = nullptr;
-        VkBuffer        UploadBuffer = nullptr;
-        VkDeviceMemory  UploadBufferMemory = nullptr;
+        VkImageView     ImageView = VK_NULL_HANDLE;
+        VkImage         Image = VK_NULL_HANDLE;
+        VkDeviceMemory  ImageMemory = VK_NULL_HANDLE;
+        VkSampler       Sampler = VK_NULL_HANDLE;
+        VkBuffer        UploadBuffer = VK_NULL_HANDLE;
+        VkDeviceMemory  UploadBufferMemory = VK_NULL_HANDLE;
     };
 }
 
