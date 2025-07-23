@@ -15,7 +15,7 @@
 
 
 #ifdef _DEBUG
-#define IMGUI_VULKAN_DEBUG_REPORT
+//#define IMGUI_VULKAN_DEBUG_REPORT
 #endif
 
 
