@@ -497,7 +497,7 @@ namespace DockingDetails
                             dockableWindow->label.c_str(), nullptr, dockableWindow->imGuiWindowFlags);
 
                     // window rename
-                    if (not_collapsed)
+                    if (not_collapsed && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopup))
                         if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight))
                         {
                             if (dockableWindow->customTitleBarContextFunction)
