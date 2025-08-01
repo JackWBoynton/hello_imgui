@@ -31,6 +31,17 @@ function(_do_install_asset app_name src dst)
             message(VERBOSE "_do_copy_asset=> install(FILES ${src} DESTINATION ${CMAKE_INSTALL_PREFIX}/${dst}  )")
         endif()
     endif()
+    
+    # Also install for MSI packaging when CPACK_GENERATOR is WIX
+    if (WIN32 AND CPACK_GENERATOR STREQUAL "WIX")
+        if (IS_DIRECTORY ${src})
+            install(DIRECTORY "${src}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${dst}" COMPONENT Runtime)
+            message(VERBOSE "_do_copy_asset=> WIX install(DIRECTORY ${src} DESTINATION ${CMAKE_INSTALL_PREFIX}/${dst}  )")
+        else()
+            install(FILES "${src}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${dst}" COMPONENT Runtime)
+            message(VERBOSE "_do_copy_asset=> WIX install(FILES ${src} DESTINATION ${CMAKE_INSTALL_PREFIX}/${dst}  )")
+        endif()
+    endif()
 endfunction()
 
 
@@ -65,5 +76,10 @@ function(hello_imgui_bundle_assets_from_folder app_name assets_folder)
     # Install app exe to install directory
     if (HELLOIMGUI_ADD_APP_WITH_INSTALL)
         install(TARGETS ${app_name} DESTINATION ${CMAKE_INSTALL_PREFIX})
+    endif()
+    
+    # Also install executable for MSI packaging when CPACK_GENERATOR is WIX
+    if (WIN32 AND CPACK_GENERATOR STREQUAL "WIX")
+        install(TARGETS ${app_name} DESTINATION ${CMAKE_INSTALL_PREFIX} COMPONENT Runtime)
     endif()
 endfunction()
