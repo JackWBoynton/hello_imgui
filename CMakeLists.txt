@@ -426,7 +426,8 @@ if(HELLOIMGUI_INSTALL)
     install(EXPORT hello-imgui-targets
         FILE hello-imgui-targets.cmake
         NAMESPACE hello-imgui::
-        DESTINATION lib/cmake/hello_imgui)
+        DESTINATION lib/cmake/hello_imgui
+        COMPONENT ClientDevelopment)
 
     include(CMakePackageConfigHelpers)
     write_basic_package_version_file(
@@ -435,7 +436,8 @@ if(HELLOIMGUI_INSTALL)
         COMPATIBILITY AnyNewerVersion)
 
     install(FILES "hello_imgui_cmake/hello-imguiConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/hello-imguiConfigVersion.cmake"
-        DESTINATION lib/cmake/hello_imgui)
+        DESTINATION lib/cmake/hello_imgui
+        COMPONENT ClientDevelopment)
 endif()
 
 #------------------------------------------------------------------------------
