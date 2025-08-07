@@ -333,35 +333,35 @@ function(him_install_imgui)
             return()
         endif()
 
-        install(TARGETS imgui DESTINATION ./lib/)
+        install(TARGETS imgui DESTINATION ./lib/ COMPONENT ClientDevelopment)
         file(GLOB imgui_headers
             ${HELLOIMGUI_IMGUI_SOURCE_DIR}/*.h
             ${HELLOIMGUI_IMGUI_SOURCE_DIR}/misc/cpp/*.h
         )
-        install(FILES ${imgui_headers} DESTINATION include)
+        install(FILES ${imgui_headers} DESTINATION include COMPONENT ClientDevelopment)
 
         if(HELLOIMGUI_HAS_OPENGL3)
-            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_opengl3.h DESTINATION include)
+            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_opengl3.h DESTINATION include COMPONENT ClientDevelopment)
         endif()
         if(HELLOIMGUI_HAS_METAL)
-            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_metal.h DESTINATION include)
+            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_metal.h DESTINATION include COMPONENT ClientDevelopment)
         endif()
         if(HELLOIMGUI_HAS_VULKAN)
-            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_vulkan.h DESTINATION include)
+            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_vulkan.h DESTINATION include COMPONENT ClientDevelopment)
         endif()
         if(HELLOIMGUI_HAS_DIRECTX11)
-            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_dx11.h DESTINATION include)
+            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_dx11.h DESTINATION include COMPONENT ClientDevelopment)
         endif()
 
         if(HELLOIMGUI_USE_SDL2)
-            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_sdl2.h DESTINATION include)
+            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_sdl2.h DESTINATION include COMPONENT ClientDevelopment)
         endif()
         if(HELLOIMGUI_USE_GLFW3)
-            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_glfw.h DESTINATION include)
+            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/backends/imgui_impl_glfw.h DESTINATION include COMPONENT ClientDevelopment)
         endif()
 
         if(HELLOIMGUI_USE_FREETYPE)
-            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/misc/freetype/imgui_freetype.h DESTINATION include)
+            install(FILES ${HELLOIMGUI_IMGUI_SOURCE_DIR}/misc/freetype/imgui_freetype.h DESTINATION include COMPONENT ClientDevelopment)
         endif()
     endif()
 endfunction()
@@ -372,11 +372,11 @@ function(him_install_implot)
             return()
         endif()
 
-        install(TARGETS implot DESTINATION ./lib/)
+        install(TARGETS implot DESTINATION ./lib/ COMPONENT ClientDevelopment)
         file(GLOB implot_headers
             ${HELLOIMGUI_IMPLOT_SOURCE_DIR}/*.h
         )
-        install(FILES ${implot_headers} DESTINATION include)
+        install(FILES ${implot_headers} DESTINATION include COMPONENT ClientDevelopment)
     endif()
 endfunction()
 
@@ -722,7 +722,7 @@ function(him_add_stb_image)
 
     if(HELLOIMGUI_INSTALL AND NOT Stb_FOUND)
         file(GLOB stb_headers ${stb_dir}/*.h)
-        install(FILES ${stb_headers} DESTINATION include)
+        install(FILES ${stb_headers} DESTINATION include COMPONENT ClientDevelopment)
     endif()
 
     # This is always installed, since it might use STB_IMAGE_IMPLEMENTATION or STB_IMAGE_WRITE_IMPLEMENTATION
@@ -932,9 +932,9 @@ function(_him_add_glad)
 
     him_add_installable_dependency(glad)
     if(HELLOIMGUI_INSTALL)
-        install(TARGETS glad DESTINATION ./lib/)
-        install(FILES ${glad_dir}/include/glad/glad.h DESTINATION include/glad)
-        install(FILES ${glad_dir}/include/KHR/khrplatform.h DESTINATION include/KHR)
+        install(TARGETS glad DESTINATION ./lib/ COMPONENT ClientDevelopment)
+        install(FILES ${glad_dir}/include/glad/glad.h DESTINATION include/glad COMPONENT ClientDevelopment)
+        install(FILES ${glad_dir}/include/KHR/khrplatform.h DESTINATION include/KHR COMPONENT ClientDevelopment)
     endif()
 endfunction()
 
@@ -1242,9 +1242,9 @@ endfunction()
 ###################################################################################################
 function(him_install)
     if (HELLOIMGUI_INSTALL AND NOT IOS AND NOT ANDROID)
-        install(TARGETS ${HELLOIMGUI_TARGET} DESTINATION lib/)
+        install(TARGETS ${HELLOIMGUI_TARGET} DESTINATION lib/ COMPONENT ClientDevelopment)
         file(GLOB headers *.h)
-        install(FILES ${headers} DESTINATION include/hello_imgui/)
+        install(FILES ${headers} DESTINATION include/hello_imgui/ COMPONENT ClientDevelopment)
         file(GLOB internal_headers internal/*.h)
         install(FILES ${internal_headers} DESTINATION include/hello_imgui/internal)
 
