@@ -419,13 +419,13 @@ if(HELLOIMGUI_INSTALL)
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
         INCLUDES DESTINATION include
-        COMPONENT ClientDevelopment)
+        COMPONENT Development)
 
     install(EXPORT hello-imgui-targets
         FILE hello-imgui-targets.cmake
         NAMESPACE hello-imgui::
         DESTINATION lib/cmake/hello_imgui
-        COMPONENT ClientDevelopment)
+        COMPONENT Development)
 
     include(CMakePackageConfigHelpers)
     write_basic_package_version_file(
@@ -435,7 +435,7 @@ if(HELLOIMGUI_INSTALL)
 
     install(FILES "hello_imgui_cmake/hello-imguiConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/hello-imguiConfigVersion.cmake"
         DESTINATION lib/cmake/hello_imgui
-        COMPONENT ClientDevelopment)
+        COMPONENT Development)
 endif()
 
 #------------------------------------------------------------------------------
