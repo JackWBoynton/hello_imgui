@@ -281,13 +281,32 @@ function(him_add_hello_imgui)
               ${IMPLOT_INCLUDES}
           )
       else()
+          # Use FetchContent to get implot when not using cmake package
+          include(FetchContent)
+          FetchContent_Declare(implot
+              GIT_REPOSITORY https://github.com/epezent/implot.git
+              GIT_TAG v0.16
+          )
+          FetchContent_MakeAvailable(implot)
+
+          # Create implot target if it doesn't exist
+          if(NOT TARGET implot)
+              FetchContent_GetProperties(implot SOURCE_DIR implot_SOURCE_DIR)
+              file(GLOB implot_sources
+                  ${implot_SOURCE_DIR}/*.cpp
+                  ${implot_SOURCE_DIR}/*.h
+              )
+              add_library(implot STATIC ${implot_sources})
+              target_include_directories(implot PUBLIC ${implot_SOURCE_DIR})
+              target_link_libraries(implot PUBLIC imgui)
+          endif()
+
           target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC implot)
       endif()
 
       add_library(hello-imgui::hello_imgui ALIAS hello_imgui)
       him_add_installable_dependency(${HELLOIMGUI_TARGET})
   endfunction()
-
 ###################################################################################################
 # Build imgui: API = him_build_imgui + him_install_imgui (to be called at the end)
 ###################################################################################################
