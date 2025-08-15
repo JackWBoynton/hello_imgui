@@ -528,12 +528,11 @@ function(_him_add_freetype_to_imgui)
 endfunction()
 
 
+
 function(_him_fetch_and_compile_plutovg_plutosvg)
-    # Fetch and compile plutovg and plutosvg
     set(backup_build_shared_libs ${BUILD_SHARED_LIBS})
     set(BUILD_SHARED_LIBS OFF)
 
-    # Fetch & build plutovg at configure time
     include(FetchContent)
     FetchContent_Declare(plutovg
         GIT_REPOSITORY https://github.com/sammycage/plutovg
@@ -546,13 +545,13 @@ function(_him_fetch_and_compile_plutovg_plutosvg)
     # (the stock CMakeLists of plutosvg is not compatible with a custom install of freetype)
     # with build options:
     #     PLUTOSVG_BUILD_STATIC
-    FetchContent_Populate(
-        plutosvg
+    FetchContent_Declare(plutosvg
         GIT_REPOSITORY https://github.com/sammycage/plutosvg
         GIT_TAG v0.0.6
-        SOURCE_DIR ${CMAKE_BINARY_DIR}/plutosvg_source
-        BINARY_DIR ${CMAKE_BINARY_DIR}/plutosvg_build
     )
+    FetchContent_Populate(plutosvg)
+    FetchContent_GetProperties(plutosvg SOURCE_DIR plutosvg_SOURCE_DIR BINARY_DIR plutosvg_BINARY_DIR)
+
     add_library(plutosvg STATIC ${plutosvg_SOURCE_DIR}/source/plutosvg.c)
     target_include_directories(plutosvg PUBLIC $<BUILD_INTERFACE:${plutosvg_SOURCE_DIR}/source>)
     target_compile_definitions(plutosvg PUBLIC PLUTOSVG_HAS_FREETYPE PLUTOSVG_BUILD_STATIC)
@@ -561,7 +560,6 @@ function(_him_fetch_and_compile_plutovg_plutosvg)
 
     set(BUILD_SHARED_LIBS ${backup_build_shared_libs})
 endfunction()
-
 
 function(_him_add_freetype_plutosvg_to_imgui)
     # Add freetype + plutovs/plutosvg to imgui
