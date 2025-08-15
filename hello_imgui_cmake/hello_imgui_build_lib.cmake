@@ -241,7 +241,7 @@ function(him_add_hello_imgui)
           target_compile_options(${HELLOIMGUI_TARGET} PRIVATE "-x" "objective-c++")
       endif()
 
-      target_include_directories(${HELLOIMGUI_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/..>)
+      target_include_directories(${HELLOIMGUI_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/../src>)
 
       target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC stb_hello_imgui)
       if (HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE)
