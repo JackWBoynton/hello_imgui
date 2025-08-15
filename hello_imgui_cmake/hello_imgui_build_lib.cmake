@@ -222,93 +222,81 @@ endfunction()
 ###################################################################################################
 ##############################
 function(him_add_hello_imgui)
-    file(GLOB_RECURSE sources
-        ${CMAKE_CURRENT_LIST_DIR}/*.h
-        ${CMAKE_CURRENT_LIST_DIR}/*.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/*.c)
-    if (APPLE)
-        file(GLOB_RECURSE sources_mm ${CMAKE_CURRENT_LIST_DIR}/*.mm)
-        set(sources ${sources} ${sources_mm})
-    endif()
-    add_library(${HELLOIMGUI_TARGET} ${sources})
-    if(APPLE AND NOT IOS)
-        target_compile_definitions(${HELLOIMGUI_TARGET} PUBLIC HELLOIMGUI_MACOS)
-    endif()
-    if(APPLE AND IOS)
-        target_compile_definitions(${HELLOIMGUI_TARGET} PUBLIC HELLOIMGUI_IOS)
-    endif()
-    if(APPLE)
-        target_compile_options(${HELLOIMGUI_TARGET} PRIVATE "-x" "objective-c++")
-    endif()
+      file(GLOB_RECURSE sources
+          ${CMAKE_CURRENT_LIST_DIR}/*.h
+          ${CMAKE_CURRENT_LIST_DIR}/*.cpp
+          ${CMAKE_CURRENT_LIST_DIR}/*.c)
+      if (APPLE)
+          file(GLOB_RECURSE sources_mm ${CMAKE_CURRENT_LIST_DIR}/*.mm)
+          set(sources ${sources} ${sources_mm})
+      endif()
+      add_library(${HELLOIMGUI_TARGET} ${sources})
+      if(APPLE AND NOT IOS)
+          target_compile_definitions(${HELLOIMGUI_TARGET} PUBLIC HELLOIMGUI_MACOS)
+      endif()
+      if(APPLE AND IOS)
+          target_compile_definitions(${HELLOIMGUI_TARGET} PUBLIC HELLOIMGUI_IOS)
+      endif()
+      if(APPLE)
+          target_compile_options(${HELLOIMGUI_TARGET} PRIVATE "-x" "objective-c++")
+      endif()
 
-    target_include_directories(${HELLOIMGUI_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>)
+      target_include_directories(${HELLOIMGUI_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>)
 
-    target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC stb_hello_imgui)
-    if (HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE)
-        find_package(imgui CONFIG REQUIRED)
-        target_link_libraries(${HELLOIMGUI_TARGET} PRIVATE imgui::imgui)
-        get_target_property(IMGUI_INCLUDES imgui::imgui INTERFACE_INCLUDE_DIRECTORIES)
-        target_include_directories(${HELLOIMGUI_TARGET} PUBLIC
-            ${IMGUI_INCLUDES}
-        )
-    else()
-        # Use FetchContent to get imgui when not using cmake package
-        include(FetchContent)
-        FetchContent_Declare(imgui
-            GIT_REPOSITORY https://github.com/ocornut/imgui.git
-            GIT_TAG v1.90.4
-        )
-        FetchContent_MakeAvailable(imgui)
+      target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC stb_hello_imgui)
+      if (HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE)
+          find_package(imgui CONFIG REQUIRED)
+          target_link_libraries(${HELLOIMGUI_TARGET} PRIVATE imgui::imgui)
+          get_target_property(IMGUI_INCLUDES imgui::imgui INTERFACE_INCLUDE_DIRECTORIES)
+          target_include_directories(${HELLOIMGUI_TARGET} PUBLIC
+              ${IMGUI_INCLUDES}
+          )
+      else()
+          # Use FetchContent to get imgui when not using cmake package
+          include(FetchContent)
+          FetchContent_Declare(imgui
+              GIT_REPOSITORY https://github.com/ocornut/imgui.git
+              GIT_TAG v1.90.4
+          )
+          FetchContent_MakeAvailable(imgui)
 
-        # Create imgui target if it doesn't exist
-        if(NOT TARGET imgui)
-            FetchContent_GetProperties(imgui SOURCE_DIR imgui_SOURCE_DIR)
-            file(GLOB imgui_sources
-                ${imgui_SOURCE_DIR}/*.cpp
-                ${imgui_SOURCE_DIR}/*.h
-            )
-            add_library(imgui STATIC ${imgui_sources})
-            target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
-        endif()
+          # Create imgui target if it doesn't exist
+          if(NOT TARGET imgui)
+              FetchContent_GetProperties(imgui SOURCE_DIR imgui_SOURCE_DIR)
+              file(GLOB imgui_sources
+                  ${imgui_SOURCE_DIR}/*.cpp
+                  ${imgui_SOURCE_DIR}/*.h
+              )
+              add_library(imgui STATIC ${imgui_sources})
+              target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
+          endif()
 
-        target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC imgui)
-    endif()
+          target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC imgui)
+      endif()
 
-    if (HELLOIMGUI_USE_IMPLOT_CMAKE_PACKAGE)
-        find_package(implot CONFIG REQUIRED)
-        target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC implot::implot)
-        get_target_property(IMPLOT_INCLUDES implot::implot INTERFACE_INCLUDE_DIRECTORIES)
-        target_include_directories(${HELLOIMGUI_TARGET} PUBLIC
-            ${IMPLOT_INCLUDES}
-        )
-    else()
-        # Use FetchContent to get implot when not using cmake package
-        include(FetchContent)
-        FetchContent_Declare(implot
-            GIT_REPOSITORY https://github.com/epezent/implot.git
-            GIT_TAG v0.16
-        )
-        FetchContent_MakeAvailable(implot)
+      if (HELLOIMGUI_USE_IMPLOT_CMAKE_PACKAGE)
+          find_package(implot CONFIG REQUIRED)
+          target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC implot::implot)
+          get_target_property(IMPLOT_INCLUDES implot::implot INTERFACE_INCLUDE_DIRECTORIES)
+          target_include_directories(${HELLOIMGUI_TARGET} PUBLIC
+              ${IMPLOT_INCLUDES}
+          )
+      else()
+          # Use FetchContent to get implot - it will use FETCHCONTENT_SOURCE_DIR_IMPLOT
+          include(FetchContent)
+          FetchContent_Declare(implot
+              GIT_REPOSITORY https://github.com/epezent/implot.git
+              GIT_TAG v0.16
+          )
+          FetchContent_MakeAvailable(implot)
 
-        # Always create implot target since implot doesn't have proper CMakeLists.txt
-        FetchContent_GetProperties(implot SOURCE_DIR implot_SOURCE_DIR)
-        if(implot_SOURCE_DIR)
-            file(GLOB implot_sources
-                ${implot_SOURCE_DIR}/*.cpp
-                ${implot_SOURCE_DIR}/*.h
-            )
-            add_library(implot STATIC ${implot_sources})
-            target_include_directories(implot PUBLIC ${implot_SOURCE_DIR})
-            target_link_libraries(implot PUBLIC imgui)
-        endif()
+          # FetchContent creates the target for us, just link it
+          target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC implot)
+      endif()
 
-        target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC implot)
-    endif()
-
-    add_library(hello-imgui::hello_imgui ALIAS hello_imgui)
-    him_add_installable_dependency(${HELLOIMGUI_TARGET})
-endfunction()
-#####################################################################
+      add_library(hello-imgui::hello_imgui ALIAS hello_imgui)
+      him_add_installable_dependency(${HELLOIMGUI_TARGET})
+endfunction()####################################################################
 # Build imgui: API = him_build_imgui + him_install_imgui (to be called at the end)
 ###################################################################################################
 function(him_build_imgui)
