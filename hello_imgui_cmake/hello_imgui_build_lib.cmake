@@ -243,6 +243,11 @@ function(him_add_hello_imgui)
 
       target_include_directories(${HELLOIMGUI_TARGET} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/../src>)
 
+      target_include_directories(${HELLOIMGUI_TARGET} PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/../src>
+            $<INSTALL_INTERFACE:include>
+      )
+
       target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC stb_hello_imgui)
       if (HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE)
           find_package(imgui CONFIG REQUIRED)
