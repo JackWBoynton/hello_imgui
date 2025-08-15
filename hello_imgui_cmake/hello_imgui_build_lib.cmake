@@ -454,6 +454,7 @@ function(_him_do_build_implot)
         add_library(implot ${implot_sources})
     endif()
 
+    target_include_directories(implot PUBLIC $<BUILD_INTERFACE:${HELLOIMGUI_IMPLOT_SOURCE_DIR}>)
     target_link_libraries(implot PRIVATE imgui)
 
     # TODO: @jboynton is this really what we need here?
