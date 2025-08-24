@@ -497,13 +497,11 @@ namespace DockingDetails
                             dockableWindow->label.c_str(), nullptr, dockableWindow->imGuiWindowFlags);
 
                     // window rename
-                    if (not_collapsed && !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopup))
-                        if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight))
-                        {
-                            if (dockableWindow->customTitleBarContextFunction)
-                                dockableWindow->customTitleBarContextFunction(dockableWindow);
-                            ImGui::EndPopup();
-                        }
+                    if (!ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopup) && ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
+                        if (dockableWindow->customTitleBarContextFunction)
+                            dockableWindow->customTitleBarContextFunction(dockableWindow);
+                        ImGui::EndPopup();
+                    }
 
                     if (not_collapsed && dockableWindow->GuiFunction)
                         dockableWindow->GuiFunction();
