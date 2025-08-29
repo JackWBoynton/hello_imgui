@@ -53,14 +53,11 @@ namespace SplitIdsHelper
         h.ImGuiSplitIDs[StripPrefix(dockSpaceName)] = imguiId;
     }
 
-    std::string SaveSplitIds()
+    const std::map<std::string, ImGuiID>& GetSplitIds()
     {
         assert(GHelloImGui != nullptr && "GHelloImGui must be initialized before using SplitIdsHelper");
         HelloImGuiContext& h = *GHelloImGui;
-        // Serialize gImGuiSplitIDs using json
-        nlohmann::json j;
-        j["gImGuiSplitIDs"] = h.ImGuiSplitIDs;
-        return j.dump();
+        return h.ImGuiSplitIDs;
     }
 
     void LoadSplitIds(const std::string& jsonStr)

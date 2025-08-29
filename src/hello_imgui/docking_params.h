@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <stdio.h>
+#include <map>
 
 namespace HelloImGui
 {
@@ -341,7 +342,7 @@ namespace SplitIdsHelper
     ImGuiID GetSplitId(const DockSpaceName& dockSpaceName);
     void SetSplitId(const DockSpaceName& dockSpaceName, ImGuiID imguiId);
 
-    std::string SaveSplitIds();
+    const std::map<std::string, ImGuiID>& GetSplitIds();
     void LoadSplitIds(const std::string& jsonStr);
 
 }  // namespace SplitIdsHelper
