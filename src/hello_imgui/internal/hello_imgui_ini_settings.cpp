@@ -3,13 +3,16 @@
 #include "hello_imgui/internal/functional_utils.h"
 #include "imgui_internal.h"
 
+#include <map>
+#include <string>
+
 
 namespace HelloImGui
 {
     // Encapsulated in docking_details.cpp
     namespace SplitIdsHelper
     {
-        std::string SaveSplitIds();
+        const std::map<std::string, ImGuiID>& GetSplitIds();
         void LoadSplitIds(const std::string&);
     }
 
@@ -421,8 +424,12 @@ namespace HelloImGui
         {
             return;
             const std::string iniPartName = "SplitIds";
-            std::string serialized = SplitIdsHelper::SaveSplitIds();
-            SaveUserPref(iniPartsFilename, iniPartName, serialized);
+            nlohmann::json j;
+            j["gImGuiIds"] = nlohmann::json::object();
+            for (const auto& [key, id] : SplitIdsHelper::GetSplitIds()) {
+                j["gImGuiIds"][key] = id;
+            }
+            SaveUserPref(iniPartsFilename, iniPartName, j.dump());
         }
 
         void LoadHelloImGuiMiscSettings(const std::string& iniPartsFilename, RunnerParams* inOutRunnerParams)
