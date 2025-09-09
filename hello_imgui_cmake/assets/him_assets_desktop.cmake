@@ -33,7 +33,7 @@ function(_do_install_asset app_name src dst)
     endif()
     
     # Also install for MSI packaging when CPACK_GENERATOR is WIX
-    if (WIN32 AND CPACK_GENERATOR STREQUAL "WIX")
+    if (WIN32 AND CPACK_GENERATOR STREQUAL "WIX" AND HELLOIMGUI_ADD_APP_WITH_INSTALL)
         if (IS_DIRECTORY ${src})
             install(DIRECTORY "${src}" DESTINATION "${dst}" COMPONENT Runtime)
             message(VERBOSE "_do_copy_asset=> WIX install(DIRECTORY ${src} DESTINATION ${dst}  )")
