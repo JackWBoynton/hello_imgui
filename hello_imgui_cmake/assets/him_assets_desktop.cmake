@@ -74,12 +74,9 @@ function(hello_imgui_bundle_assets_from_folder app_name assets_folder)
     endif()
 
     # Install app exe to install directory
-    if (HELLOIMGUI_ADD_APP_WITH_INSTALL)
-        install(TARGETS ${app_name} DESTINATION ${CMAKE_INSTALL_PREFIX})
-    endif()
-    
-    # Also install executable for MSI packaging when CPACK_GENERATOR is WIX
-    if (WIN32 AND CPACK_GENERATOR STREQUAL "WIX")
+    if (WIN32 AND CPACK_GENERATOR STREQUAL "WIX" AND HELLOIMGUI_ADD_APP_WITH_INSTALL)
         install(TARGETS ${app_name} DESTINATION ${CMAKE_INSTALL_PREFIX} COMPONENT Runtime)
+    elseif (HELLOIMGUI_ADD_APP_WITH_INSTALL)
+        install(TARGETS ${app_name} DESTINATION ${CMAKE_INSTALL_PREFIX})
     endif()
 endfunction()
