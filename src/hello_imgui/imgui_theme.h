@@ -29,6 +29,7 @@ namespace ImGuiTheme
         ImGuiTheme_SoDark_AccentRed,
         ImGuiTheme_BlackIsBlack,
         ImGuiTheme_WhiteIsWhite,
+        ImGuiTheme_TIXL,
         ImGuiTheme_Count
     };
     const char* ImGuiTheme_Name(ImGuiTheme_ theme);
