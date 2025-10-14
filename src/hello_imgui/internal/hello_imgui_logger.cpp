@@ -1,6 +1,7 @@
 #include "hello_imgui/hello_imgui_logger.h"
 #include "hello_imgui/internal/imguial_term.h"
 #include "hello_imgui/hello_imgui.h"
+#include <mutex>
 
 namespace HelloImGui
 {
@@ -10,11 +11,14 @@ namespace InternalLogBuffer
     static constexpr size_t gMaxBufferSize = 600000;
     char gLogBuffer_[gMaxBufferSize];
     ImGuiAl::Log gLog(gLogBuffer_, gMaxBufferSize);
+    std::mutex gLogMutex;
 
 }
 
 void Log(LogLevel level, char const* const format, ...)
 {
+    std::lock_guard<std::mutex> lock(InternalLogBuffer::gLogMutex);
+    
     va_list args;
     va_start(args, format);
 
@@ -34,11 +38,13 @@ void Log(LogLevel level, char const* const format, ...)
 
 void LogClear()
 {
+    std::lock_guard<std::mutex> lock(InternalLogBuffer::gLogMutex);
     InternalLogBuffer::gLog.clear();
 }
 
 void LogGui(ImVec2 size, bool minimal)
 {
+    std::lock_guard<std::mutex> lock(InternalLogBuffer::gLogMutex);
     InternalLogBuffer::gLog.draw(size, minimal);
 }
 
