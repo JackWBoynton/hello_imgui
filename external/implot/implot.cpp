@@ -2845,6 +2845,37 @@ void SetupFinish() {
 }
 
 //-----------------------------------------------------------------------------
+// [SECTION] Context Menu
+//-----------------------------------------------------------------------------
+
+bool BeginCustomContext()
+{
+    ImPlotContext& gp = *GImPlot;
+
+    if (gp.CurrentPlot == nullptr) return false;
+
+    ImPlotPlot &plot  = *gp.CurrentPlot;
+
+    const bool can_ctx = plot.Hovered &&
+                         !plot.Items.Legend.Hovered &&
+                         !plot.ContextLocked && // <-- added
+                         ImGui::IsMouseReleased(ImGuiMouseButton_Right);
+
+    // main ctx menu
+    if (can_ctx)
+        ImGui::OpenPopup("##CustomPlotContext");
+
+    return ImGui::BeginPopup("##CustomPlotContext");
+}
+
+void EndCustomContext(bool include_default)
+{
+    if (include_default)
+        ShowPlotContextMenu(*(GImPlot->CurrentPlot));
+    ImGui::EndPopup();
+}
+
+//-----------------------------------------------------------------------------
 // EndPlot()
 //-----------------------------------------------------------------------------
 
@@ -3288,7 +3319,7 @@ void EndPlot() {
 
 
     // main ctx menu
-    if (can_ctx && plot.Hovered)
+    if (can_ctx && !ImHasFlag(plot.Flags, ImPlotFlags_NoCentralMenu) && plot.Hovered)
         ImGui::OpenPopup("##PlotContext");
     if (ImGui::BeginPopup("##PlotContext")) {
         ShowPlotContextMenu(plot);
