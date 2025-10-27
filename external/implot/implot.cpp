@@ -2856,10 +2856,12 @@ bool BeginCustomContext()
 
     ImPlotPlot &plot  = *gp.CurrentPlot;
 
-    const bool can_ctx = plot.Hovered &&
+    // Use the existing OpenContextThisFrame system instead of directly checking mouse release
+    // This allows legend context menus to be handled first
+    const bool can_ctx = gp.OpenContextThisFrame &&
+                         plot.Hovered &&
                          !plot.Items.Legend.Hovered &&
-                         !plot.ContextLocked && // <-- added
-                         ImGui::IsMouseReleased(ImGuiMouseButton_Right);
+                         !plot.ContextLocked;
 
     // main ctx menu
     if (can_ctx)
