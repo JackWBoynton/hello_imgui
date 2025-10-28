@@ -39,6 +39,8 @@ namespace ImGuiDefaultSettings
             iconFontFile = "fonts/vscode-codicons.ttf";
             fontParams.fontConfig.GlyphOffset = ImVec2(1, 4.2);
         }
+        else if (defaultIconFont == HelloImGui::DefaultIconFont::MaterialDesignIcons)
+            iconFontFile = "fonts/MaterialDesignIcons-Regular.ttf";
         else
             return;
 

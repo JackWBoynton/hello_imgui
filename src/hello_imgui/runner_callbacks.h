@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 
-
 namespace HelloImGui
 {
 // --------------------------------------------------------------------------------------------------------------------
@@ -17,17 +16,14 @@ namespace HelloImGui
 using VoidFunction = std::function<void(void)>;
 inline VoidFunction EmptyVoidFunction() { return {}; }
 
-
 // SequenceFunctions: returns a function that will call f1 and f2 in sequence
 VoidFunction SequenceFunctions(const VoidFunction& f1, const VoidFunction& f2);
 
-
 // AnyEventCallback can hold any bool(void *) function.
-using AnyEventCallback = std::function<bool(void * backendEvent)>;
-inline AnyEventCallback EmptyEventCallback() {return {}; }
+using AnyEventCallback = std::function<bool(void* backendEvent)>;
+inline AnyEventCallback EmptyEventCallback() { return {}; }
 
 // @@md
-
 
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -61,7 +57,6 @@ struct MobileCallbacks
 };
 // @@md
 
-
 // --------------------------------------------------------------------------------------------------------------------
 
 // @@md#EdgeToolbar
@@ -88,7 +83,6 @@ struct EdgeToolbarOptions
     ImVec4 WindowBg = ImVec4(0.f, 0.f, 0.f, 0.f);
 };
 
-
 // EdgeToolbar :a toolbar that can be placed on the edges of the App window
 // It will be placed in a non-dockable window
 struct EdgeToolbar
@@ -100,7 +94,6 @@ struct EdgeToolbar
 std::vector<EdgeToolbarType> AllEdgeToolbarTypes();
 std::string EdgeToolbarTypeName(EdgeToolbarType e);
 // @@md
-
 
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -116,10 +109,10 @@ enum class DefaultIconFont
     NoIcons,
     FontAwesome4,
     FontAwesome6,
-    VsCodeIcons
+    VsCodeIcons,
+    MaterialDesignIcons
 };
 // @@md
-
 
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -164,7 +157,6 @@ struct RunnerCallbacks
                         VoidFunction guiFunction,
                         const EdgeToolbarOptions& options = EdgeToolbarOptions());
 
-
     // --------------- Startup sequence callbacks -------------------
 
     // `PostInit_AddPlatformBackendCallbacks`:
@@ -173,7 +165,6 @@ struct RunnerCallbacks
     //  If you, want to add your own glfw callbacks, you should use this function to do so
     //  (and then ImGui will call your callbacks followed by its own callbacks)
     VoidFunction PostInit_AddPlatformBackendCallbacks = EmptyVoidFunction();
-
 
     // `PostInit`: You can here add a function that will be called once after everything
     //  is inited (ImGui, Platform and Renderer Backend)
@@ -189,7 +180,8 @@ struct RunnerCallbacks
     // `LoadAdditionalFonts` will be called once, then *set to nullptr*.
     // If you want to load additional fonts, during the app execution, you can
     // set LoadAdditionalFonts to a function that will load the additional fonts.
-    VoidFunction LoadAdditionalFonts = (VoidFunction)ImGuiDefaultSettings::LoadDefaultFont_WithFontAwesomeIcons;
+    VoidFunction LoadAdditionalFonts =
+        (VoidFunction)ImGuiDefaultSettings::LoadDefaultFont_WithFontAwesomeIcons;
     // If LoadAdditionalFonts==LoadDefaultFont_WithFontAwesomeIcons, this parameter control
     // which icon font will be loaded by default.
     DefaultIconFont defaultIconFont = DefaultIconFont::FontAwesome4;
@@ -209,8 +201,7 @@ struct RunnerCallbacks
     // `registerTestsCalled`: will be set to true when RegisterTests was called
     // (you can set this to false if you want to RegisterTests to be called again
     //  during the app execution)
-    bool         registerTestsCalled = false;
-
+    bool registerTestsCalled = false;
 
     // --------------- Exit sequence callbacks -------------------
 
@@ -226,7 +217,6 @@ struct RunnerCallbacks
     // `BeforeExit_PostCleanup`: You can here add a function that will be called once
     // before exiting (after OpenGL and ImGui have been stopped)
     VoidFunction BeforeExit_PostCleanup = EmptyVoidFunction();
-
 
     // --------------- Callbacks in the render loop -------------------
 
@@ -264,7 +254,6 @@ struct RunnerCallbacks
     //  Note: in the case of GLFW, you should use register them in `PostInit`
     AnyEventCallback AnyBackendEventCallback = EmptyEventCallback();
 
-
     // --------------- Mobile callbacks -------------------
 #ifdef HELLOIMGUI_MOBILEDEVICE
     // `mobileCallbacks`: Callbacks that are called by the application
@@ -278,7 +267,6 @@ struct RunnerCallbacks
 #endif
 };
 // @@md
-
 
 // AppendCallback: legacy synonym for SequenceFunctions
 VoidFunction AppendCallback(const VoidFunction& previousCallback, const VoidFunction& newCallback);
