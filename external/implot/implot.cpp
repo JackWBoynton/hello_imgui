@@ -2856,11 +2856,13 @@ bool BeginCustomContext()
 
     ImPlotPlot &plot  = *gp.CurrentPlot;
 
-    // Use the existing OpenContextThisFrame system instead of directly checking mouse release
-    // This allows legend context menus to be handled first
+    // Only handle custom context if we're NOT hovering legend AND legend context menu isn't open
+    // This ensures legend interactions (cmd-click, right-click) work first
+    const bool legend_context_open = ImGui::IsPopupOpen("##LegendContext");
     const bool can_ctx = gp.OpenContextThisFrame &&
                          plot.Hovered &&
                          !plot.Items.Legend.Hovered &&
+                         !legend_context_open &&
                          !plot.ContextLocked;
 
     // main ctx menu
