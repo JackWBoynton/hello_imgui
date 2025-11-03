@@ -6,7 +6,7 @@ function(_hello_imgui_create_windows_ico assets_location)
     endif()
 
     if (EXISTS ${custom_app_ico})
-        file(COPY ${custom_app_ico} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/icon.ico)
+        file(COPY ${custom_app_ico} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
         return()
     endif()
 
