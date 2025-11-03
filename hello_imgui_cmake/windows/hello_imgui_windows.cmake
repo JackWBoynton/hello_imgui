@@ -1,6 +1,12 @@
 function(_hello_imgui_create_windows_ico assets_location)
     set(custom_app_png_icon ${assets_location}/app_settings/icon.png)
-    if (NOT EXISTS ${custom_app_png_icon})
+    set(custom_app_ico ${assets_location}/app_settings/icon.ico)
+    if (NOT EXISTS ${custom_app_png_icon} AND NOT EXISTS ${custom_app_ico})
+        return()
+    endif()
+
+    if (EXISTS ${custom_app_ico})
+        file(COPY ${custom_app_ico} DESTINATION ${CMAKE_CURRENT_BINARY_DIR} RENAME icon.ico)
         return()
     endif()
 
