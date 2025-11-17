@@ -126,7 +126,7 @@ namespace HelloImGui
                 if (data == nullptr) {
                     auto assetData = LoadAssetFileData(assetPath);
                     IM_ASSERT(assetData.data != nullptr);
-                    svgRgbaImage = priv_SvgToRgba(assetData, svgSize);
+                    svgRgbaImage = priv_SvgToRgba((const char*)assetData.data, assetData.dataSize, svgSize);
                     FreeAssetFileData(&assetData);
                 } else {
                     svgRgbaImage = priv_SvgToRgba((const char*)data, len, svgSize);
