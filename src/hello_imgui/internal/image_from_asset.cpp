@@ -18,7 +18,20 @@
 #include <string>
 #include <unordered_map>
 #include <stdexcept>
+#include <vector>
 
+struct SvgRgbaImage
+{
+    std::vector<unsigned char> data;
+    int width;
+    int height;
+};
+
+static SvgRgbaImage priv_SvgToRgba(
+    const char* assetFileData,
+    size_t dataSize,
+    ImVec2 size = ImVec2(0.f, 0.f) // Use intrinsic width if 0, Use intrinsic height if 0. Preserve aspect ratio if only one is provided
+);
 
 namespace HelloImGui
 {
@@ -37,11 +50,26 @@ namespace HelloImGui
 
     static std::unordered_map<std::string, ImageAbstractPtr > gImageFromAssetMap;
 
-
-    static ImageAbstractPtr _GetCachedImage(const char*assetPath)
+        static std::string priv_FilenameAndSizeKey(const char* assetPath, ImVec2 size)
     {
-        if (gImageFromAssetMap.find(assetPath) != gImageFromAssetMap.end())
-            return gImageFromAssetMap.at(assetPath);
+        std::string key = assetPath;
+        key += "_";
+        key += std::to_string(size.x);
+        key += "_";
+        key += std::to_string(size.y);
+        return key;
+    }
+
+    static bool priv_IsFilenameSvg(const std::string& filename)
+    {
+        return filename.size() > 4 && filename.substr(filename.size() - 4) == ".svg";
+    }
+
+    static ImageAbstractPtr _GetCachedImage(const char*assetPath, const unsigned char* data = nullptr, size_t len = 0, ImVec2 svgSize = ImVec2(0.f, 0.f))
+    {
+        auto key = priv_FilenameAndSizeKey(assetPath, svgSize);
+        if (gImageFromAssetMap.find(key) != gImageFromAssetMap.end())
+            return gImageFromAssetMap.at(key);
 
         HelloImGui::RendererBackendType rendererBackendType = HelloImGui::GetRunnerParams()->rendererBackendType;
         ImageAbstractPtr concreteImage;
@@ -65,30 +93,51 @@ namespace HelloImGui
         if (concreteImage == nullptr)
         {
             HelloImGui::Log(LogLevel::Warning, "ImageFromAsset: not implemented for this rendering backend!");
-            gImageFromAssetMap[assetPath] = nullptr; // Cache the failure
+            gImageFromAssetMap[key] = nullptr; // Cache the failure
             return nullptr;
         }
 
-        unsigned char* image_data_rgba;
-        {
-            // Load the image using stbi_load_from_memory
-            auto assetData = LoadAssetFileData(assetPath);
-            IM_ASSERT(assetData.data != nullptr);
-            image_data_rgba = stbi_load_from_memory(
-                (unsigned char *)assetData.data, (int)assetData.dataSize,
-                &concreteImage->Width, &concreteImage->Height, NULL, 4);
-            FreeAssetFileData(&assetData);
+        bool isSvg = priv_IsFilenameSvg(assetPath);
+
+        if (!isSvg) {
+            unsigned char* image_data_rgba;
+            {
+                // Load the image using stbi_load_from_memory
+                auto assetData = LoadAssetFileData(assetPath);
+                IM_ASSERT(assetData.data != nullptr);
+                image_data_rgba = stbi_load_from_memory(
+                    (unsigned char *)assetData.data, (int)assetData.dataSize,
+                    &concreteImage->Width, &concreteImage->Height, NULL, 4);
+                FreeAssetFileData(&assetData);
+            }
+
+            if (image_data_rgba == NULL)
+            {
+                IM_ASSERT(false && "_GetCachedImage: Failed to load image!");
+                throw std::runtime_error("_GetCachedImage: Failed to load image!");
+            }
+            concreteImage->_impl_StoreTexture(concreteImage->Width, concreteImage->Height, image_data_rgba);
+            stbi_image_free(image_data_rgba);
+        } else {
+            // Load SVG
+            SvgRgbaImage svgRgbaImage;
+            {
+                // Load the image using stbi_load_from_memory
+                if (data == nullptr) {
+                    auto assetData = LoadAssetFileData(assetPath);
+                    IM_ASSERT(assetData.data != nullptr);
+                    svgRgbaImage = priv_SvgToRgba(assetData, svgSize);
+                    FreeAssetFileData(&assetData);
+                } else {
+                    svgRgbaImage = priv_SvgToRgba((const char*)data, len, svgSize);
+                }
+                concreteImage->Height = svgRgbaImage.height;
+                concreteImage->Width = svgRgbaImage.width;
+            }
+            concreteImage->_impl_StoreTexture(concreteImage->Width, concreteImage->Height, svgRgbaImage.data.data());
         }
 
-        if (image_data_rgba == NULL)
-        {
-            IM_ASSERT(false && "_GetCachedImage: Failed to load image!");
-            throw std::runtime_error("_GetCachedImage: Failed to load image!");
-        }
-        concreteImage->_impl_StoreTexture(concreteImage->Width, concreteImage->Height, image_data_rgba);
-        stbi_image_free(image_data_rgba);
-
-        gImageFromAssetMap[assetPath] = concreteImage;
+        gImageFromAssetMap[key] = concreteImage;
         return concreteImage;
     }
 
@@ -116,11 +165,41 @@ namespace HelloImGui
             ImGui::Image(textureId, displayedSize, uv0, uv1);
     }
 
+    void ImageFromExternalAsset_Impl(
+        unsigned char* data, size_t len,
+        const char *assetPath, const ImVec2& size,
+        const ImVec2& uv0, const ImVec2& uv1,
+        bool withBg,
+        const ImVec4& tint_col = ImVec4(1,1,1,1),
+        const ImVec4& border_col = ImVec4(0,0,0,0)
+        )
+    {
+        auto cachedImage = _GetCachedImage(assetPath, data, len);
+        if (cachedImage == nullptr)
+        {
+            ImGui::TextColored(ImVec4(1.f, 0.f, 0.f, 1.f), "ImageFromExternalAsset: fail!");
+            return;
+        }
+        auto textureId = cachedImage->TextureID();
+        auto imageSize = ImVec2((float)cachedImage->Width, (float)cachedImage->Height);
+        ImVec2 displayedSize = ImageProportionalSize(size, imageSize);
+        if (withBg)
+            ImGui::ImageWithBg(textureId, displayedSize, uv0, uv1, tint_col, border_col);
+        else
+            ImGui::Image(textureId, displayedSize, uv0, uv1);
+    }
+
     void ImageFromAsset(
         const char *assetPath, const ImVec2& size,
         const ImVec2& uv0, const ImVec2& uv1)
     {
         ImageFromAsset_Impl(assetPath, size, uv0, uv1, false);
+    }
+
+
+    void ImageFromExternalAsset(unsigned char* data, size_t len, const char *assetPath, const ImVec2& size,
+                    const ImVec2& uv0, const ImVec2& uv1) {
+        ImageFromExternalAsset_Impl(data, len, assetPath, size, uv0, uv1, false);
     }
 
     void ImageFromAssetWithBg(
@@ -178,4 +257,113 @@ namespace HelloImGui
         }
     }
 
+}
+
+#include "plutosvg.h"
+
+
+static SvgRgbaImage priv_SvgToRgba(
+    const char* assetFileData,
+    size_t dataSize,
+    ImVec2 size // Use intrinsic width if 0, Use intrinsic height if 0. Preserve aspect ratio if only one is provided
+)
+{
+    // Load SVG document
+    plutosvg_document_t* svg =
+        plutosvg_document_load_from_data((const char*)assetFileData, dataSize, 0, 0, NULL, NULL);
+    if (!svg) {
+        IM_ASSERT(false && "SvgToRgba: Failed to load SVG document.");
+    }
+
+
+    // Get intrinsic dimensions
+    float intrinsic_width = plutosvg_document_get_width(svg);
+    float intrinsic_height = plutosvg_document_get_height(svg);
+    if (intrinsic_width == 0 || intrinsic_height == 0) {
+        plutosvg_document_destroy(svg);
+        IM_ASSERT(false && "SvgToRgba: SVG document has invalid dimensions.");
+    }
+
+
+    // Determine render dimensions
+    float width = size.x;
+    float height = size.y;
+    float render_width = width;
+    float render_height = height;
+
+
+    if (width == 0.0f && height == 0.0f) {
+        render_width = intrinsic_width;
+        render_height = intrinsic_height;
+    } else if (width == 0.0f) {
+        // Calculate width to preserve aspect ratio
+        render_width = (height / intrinsic_height) * intrinsic_width;
+    } else if (height == 0.0f) {
+        // Calculate height to preserve aspect ratio
+        render_height = (width / intrinsic_width) * intrinsic_height;
+    }
+
+
+    // Create a surface with the determined dimensions
+    plutovg_surface_t* surface = plutovg_surface_create(static_cast<int>(render_width), static_cast<int>(render_height));
+    if (!surface) {
+        plutosvg_document_destroy(svg);
+        IM_ASSERT(false && "SvgToRgba: Failed to create Plutovg surface.");
+    }
+
+
+    // Create a canvas for drawing
+    plutovg_canvas_t* canvas = plutovg_canvas_create(surface);
+    if (!canvas) {
+        plutovg_surface_destroy(surface);
+        plutosvg_document_destroy(svg);
+        IM_ASSERT(false && "SvgToRgba: Failed to create Plutovg canvas.");
+    }
+
+
+    // Clear the surface with transparent color
+    plutovg_color_t transparent = PLUTOVG_MAKE_COLOR(1, 1, 1, 0);
+    //plutovg_surface_clear(surface, &transparent);
+
+
+    // Set up palette callback (optional, can be nullptr if not using CSS variables)
+    // For simplicity, we'll use nullptr here.
+    bool render_success = plutosvg_document_render(svg, nullptr, canvas, &transparent, nullptr, nullptr);
+    if (!render_success) {
+        plutovg_canvas_destroy(canvas);
+        plutovg_surface_destroy(surface);
+        plutosvg_document_destroy(svg);
+        IM_ASSERT(false && "SvgToRgba: Failed to render SVG document.");
+    }
+
+
+    // Access pixel data
+    unsigned char* pixel_data = plutovg_surface_get_data(surface);
+    if (!pixel_data) {
+        plutovg_canvas_destroy(canvas);
+        plutovg_surface_destroy(surface);
+        plutosvg_document_destroy(svg);
+        IM_ASSERT(false && "SvgToRgba: Failed to access surface pixel data.");
+    }
+
+
+    int stride = plutovg_surface_get_stride(surface);
+    int height_px = plutovg_surface_get_height(surface);
+    int width_px = plutovg_surface_get_width(surface);
+    IM_ASSERT(stride == width_px * 4 && "SvgToRgba: Unexpected stride.");
+
+
+    // Convert ARGB Premultiplied to RGBA Plain
+    // Plutovg uses premultiplied ARGB, but we need plain RGBA for ImGui
+    std::vector<unsigned  char> rgba_data(width_px * height_px * 4);
+    plutovg_convert_argb_to_rgba(rgba_data.data(), pixel_data, width_px, height_px, stride);
+
+
+    // Cleanup
+    plutovg_canvas_destroy(canvas);
+    plutovg_surface_destroy(surface);
+    plutosvg_document_destroy(svg);
+
+
+    return SvgRgbaImage{rgba_data, width_px, height_px};
 }
