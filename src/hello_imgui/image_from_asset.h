@@ -29,7 +29,7 @@ namespace HelloImGui
 void ImageFromAsset(const char *assetPath, const ImVec2& size = ImVec2(0, 0),
                     const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1,1));
 
-void ImageFromExternalAsset(unsigned char* data, size_t len, const ImVec2& size = ImVec2(0, 0),
+void ImageFromExternalAsset(unsigned char* data, size_t len, const char* assetPath, const ImVec2& size = ImVec2(0, 0),
                     const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1,1));
 
 // `HelloImGui::ImageFromAsset(const char *assetPath, size, ...)`:
