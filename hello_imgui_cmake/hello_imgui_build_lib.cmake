@@ -598,6 +598,14 @@ function(_him_add_freetype_plutosvg_to_imgui)
     # - enable plutosvg in imgui via IMGUI_ENABLE_FREETYPE_PLUTOSVG
     # - add plutosvg + plutovg to imgui
 
+    # Option 0: use existing plutosvg target if available
+    if (TARGET plutosvg)
+        target_link_libraries(imgui PUBLIC plutosvg)
+        target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG)
+        set(HELLOIMGUI_FREETYPE_SELECTED_INFO "${HELLOIMGUI_FREETYPE_SELECTED_INFO} - use existing plutosvg target" CACHE INTERNAL "" FORCE)
+        return()
+    endif()
+
     # Option 1 (disabled at the moment, but left as an inspiration): use system plutosvg + plutovg
     #
     # Note for package maintainers (conda, etc.):
