@@ -23,6 +23,41 @@ namespace HelloImGui { namespace BackendApi
             gRenderCallbackDuringResize_Glfw();
     }
 
+    static void WindowRefreshCallback(GLFWwindow* window)
+    {
+        // Handle window refresh events (e.g., during resize) to ensure continuous rendering
+        // This callback is triggered when the window needs to be redrawn
+        if (gRenderCallbackDuringResize_Glfw)
+            gRenderCallbackDuringResize_Glfw();
+    }
+
+    static void TriggerRefresh(GLFWwindow* window)
+    {
+        // Post an empty event to wake up glfwWaitEvents and trigger a refresh
+        // This ensures smooth rendering during user interactions
+        glfwPostEmptyEvent();
+    }
+
+    static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+    {
+        TriggerRefresh(window);
+    }
+
+    static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+    {
+        TriggerRefresh(window);
+    }
+
+    static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+    {
+        TriggerRefresh(window);
+    }
+
+    static void WindowFocusCallback(GLFWwindow* window, int focused)
+    {
+        TriggerRefresh(window);
+    }
+
 
 
     WindowPointer GlfwWindowHelper::CreateWindow(AppWindowParams &appWindowParams, const BackendOptions& backendOptions,
@@ -149,6 +184,14 @@ namespace HelloImGui { namespace BackendApi
 
         glfwSetWindowSizeCallback(window, WindowSizeCallback);
         glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+        glfwSetWindowRefreshCallback(window, WindowRefreshCallback);
+
+        // Register additional callbacks for smoother user interaction
+        glfwSetCursorPosCallback(window, CursorPosCallback);
+        glfwSetMouseButtonCallback(window, MouseButtonCallback);
+        glfwSetScrollCallback(window, ScrollCallback);
+        glfwSetWindowFocusCallback(window, WindowFocusCallback);
+
         // printf("Final window size: %ix%i\n", windowSize[0], windowSize[1]);
         // printf("Final window position: %ix%i\n", windowPosition[0], windowPosition[1]);
 
