@@ -1,14 +1,14 @@
 #pragma once
-#include "imgui.h"
 #include "hello_imgui/runner_callbacks.h"
+#include "imgui.h"
 #include <functional>
-#include <string>
-#include <vector>
-#include <utility>
+#include <map>
 #include <memory>
 #include <optional>
 #include <stdio.h>
-#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace HelloImGui
 {
@@ -26,7 +26,8 @@ HelloImGui will then provide a "View" menu with options to show/hide the dockabl
 
 ![demo docking](https://traineq.org/ImGuiBundle/HelloImGuiLayout.gif)
 
-* Source for this example: https://github.com/pthom/hello_imgui/tree/master/src/hello_imgui_demos/hello_imgui_demodocking
+* Source for this example:
+https://github.com/pthom/hello_imgui/tree/master/src/hello_imgui_demos/hello_imgui_demodocking
 * [Video explanation on YouTube](https://www.youtube.com/watch?v=XKxmz__F4ow) (5 minutes)
 
 
@@ -161,7 +162,6 @@ HelloImGui::Run(runnerParams);
 // where windows can be docked.
 using DockSpaceName = std::string;
 
-
 // @@md#DockingSplit
 
 // DockingSplit is a struct that defines the way the docking splits should
@@ -250,7 +250,6 @@ struct DockingParams
     //  Only used in advanced cases, when several layouts are available.
     std::string layoutName = "Default";
 
-
     // --------------- Options -----------------------------
 
     // `mainDockSpaceNodeFlags`: _ImGuiDockNodeFlags (enum),
@@ -261,6 +260,10 @@ struct DockingParams
     //  You can also set flags for specific dock spaces via `DockingSplit.nodeFlags`
     ImGuiDockNodeFlags mainDockSpaceNodeFlags = ImGuiDockNodeFlags_PassthruCentralNode;
 
+    // `lockLayout`: _bool, default=false_.
+    //  When true, prevents the dockspace layout from being modified
+    //  (no splitting, no undocking, no resizing)
+    bool lockLayout = false;
 
     // --------------- Layout handling -----------------------------
 
@@ -276,7 +279,6 @@ struct DockingParams
     //  applied manually by the user. layoutReset will be reset to false after this.
     bool layoutReset = false;
 
-
     // --------------- Helper Methods -----------------------------
 
     // `DockableWindow * dockableWindowOfName(const std::string & name)`:
@@ -290,6 +292,14 @@ struct DockingParams
     // `optional<ImGuiID> dockSpaceIdFromName(const std::string& dockSpaceName)`:
     // returns the ImGuiID corresponding to the dockspace with this name
     std::optional<ImGuiID> dockSpaceIdFromName(const std::string& dockSpaceName);
+
+    // `void setLayoutLocked(bool locked)`:
+    // Helper method to lock/unlock the dockspace layout
+    void setLayoutLocked(bool locked) { lockLayout = locked; }
+
+    // `bool isLayoutLocked() const`:
+    // Returns true if the layout is locked
+    bool isLayoutLocked() const { return lockLayout; }
 };
 // @@md
 
@@ -323,10 +333,22 @@ struct DockableWindow
     ImVec2 windowPosition = ImVec2(0.f, 0.f);
     ImGuiCond windowPositionCondition = ImGuiCond_FirstUseEver;
     DockingParams dockingParams = {};
+
+    // Lock-related members
+    bool lockLayout = false;  // When true, prevents this dockspace's layout from being modified
+    bool lockChildren = false;  // When true, child windows cannot be undocked/moved
+
     bool wantsClose = false;
     bool justAdded = true;
     bool wantsAutoDock = true;
+    bool parentIsVisibleOrNull = true;
     DockableWindowAdditionState state = DockableWindowAdditionState::Waiting;
+
+    // Helper methods for lock state
+    void setLayoutLocked(bool locked) { lockLayout = locked; }
+    bool isLayoutLocked() const { return lockLayout; }
+    void setChildrenLocked(bool locked) { lockChildren = locked; }
+    bool areChildrenLocked() const { return lockChildren; }
 };
 // @@md
 

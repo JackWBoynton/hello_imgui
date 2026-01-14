@@ -45,16 +45,8 @@ function(hello_imgui_add_app)
     endif()
   endif()
 
-  if (NOT DEFINED ${ARG_LINK_ENABLED} OR ${ARG_LINK_ENABLED})
-    set(link ON)
-  else()
-    set(link OFF)
-  endif()
-
-
   message(VERBOSE "hello_imgui_add_app
              app_name=${app_name}
-             link=${link}
              sources=${app_sources}
              assets_location=${assets_location}
     ")
@@ -80,7 +72,7 @@ function(hello_imgui_add_app)
     add_executable(${app_name} ${app_sources})
   endif()
 
-  hello_imgui_prepare_app(${app_name} ${link} ${assets_location})
+  hello_imgui_prepare_app(${app_name} ${assets_location})
 endfunction()
 
 
@@ -144,14 +136,14 @@ endfunction()
 #     * It will automatically link the target to the required libraries (hello_imgui, OpenGl, glad, etc)
 #     * It will embed the assets (for desktop, mobile, and emscripten apps)
 #     * It will perform additional customization (app icon and name on mobile platforms, etc)
-function(hello_imgui_prepare_app app_name link assets_location)
+function(hello_imgui_prepare_app app_name assets_location)
   set_bundle_variables_defaults(${app_name})
   hello_imgui_bundle_assets(${app_name} ${assets_location})
   hello_imgui_platform_customization(${app_name} ${assets_location})
 
-  #if (${link} STREQUAL "ON" OR ${link})
-  #  target_link_libraries(${app_name} PRIVATE hello-imgui::hello_imgui)
-  #endif()
+  if (NOT DEFINED HELLO_IMGUI_NO_LINK)
+    target_link_libraries(${app_name} PRIVATE hello-imgui::hello_imgui)
+  endif()
 
   if (ANDROID AND HELLOIMGUI_CREATE_ANDROID_STUDIO_PROJECT)
     set(apkCMake_applicationIdUrlPart ${HELLO_IMGUI_BUNDLE_IDENTIFIER_URL_PART})

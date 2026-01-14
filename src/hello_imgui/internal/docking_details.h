@@ -1,18 +1,26 @@
 #pragma once
-#include "imgui.h"
 #include "hello_imgui/docking_params.h"
-#include "hello_imgui/runner_params.h"
 #include "hello_imgui/imgui_window_params.h"
+#include "hello_imgui/runner_params.h"
+#include "imgui.h"
 #include <functional>
 
 struct DockableWindowWaitingForAddition
 {
     std::shared_ptr<HelloImGui::DockableWindow> dockableWindow;
     bool forceDockspace;
+    uint8_t waitingFramesBeforeAdd = 10;
 };
 
 namespace HelloImGui
 {
+
+// Used for external rendering of dockable windows
+// this works because ImGui::Begin(some_id) can be called multiple times per frame for the same ID so
+// HelloImGui can maintain layouts/docking while the user can call Begin/End to render the window contents
+// separately. Begin(...) will return false if the window is collapsed/hidden so the user can skip rendering.
+bool Begin(const std::shared_ptr<DockableWindow>& dockableWindow);
+void End();
 
 // Internal functions below
 namespace DockingDetails

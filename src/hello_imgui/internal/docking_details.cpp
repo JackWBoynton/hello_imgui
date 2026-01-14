@@ -1,16 +1,14 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "hello_imgui/internal/docking_details.h"
-#include "imgui.h"
-#include "hello_imgui/internal/imgui_global_context.h" // must be included before imgui_internal.h
-#include "hello_imgui/hello_imgui_theme.h"
 #include "hello_imgui/hello_imgui.h"
-#include "hello_imgui/internal/functional_utils.h"
+#include "hello_imgui/hello_imgui_theme.h"
 #include "hello_imgui/internal/context.h"
+#include "hello_imgui/internal/functional_utils.h"
+#include "hello_imgui/internal/imgui_global_context.h"  // must be included before imgui_internal.h
+#include "imgui.h"
 #include "imgui_internal.h"
 #include "nlohmann/json.hpp"
 
-#include <map>
-#include <vector>
 #include <cassert>
 #include <map>
 #include <optional>
@@ -26,6 +24,21 @@ namespace HelloImGui
 {
 // From hello_imgui.cpp
 bool ShouldRemoteDisplay();
+
+bool Begin(const std::shared_ptr<DockableWindow>& dockableWindow)
+{
+    assert(dockableWindow != nullptr && "Begin: dockableWindow is null");
+    assert(dockableWindow->GuiFunction == nullptr &&
+           "Begin: dockableWindow->GuiFunction should not be set when using external Begin/End");
+
+    // Don't show close button if window is locked or explicitly not closable
+    bool showCloseButton = dockableWindow->canBeClosed && !dockableWindow->lockLayout;
+    return ImGui::Begin(dockableWindow->label.c_str(),
+                        showCloseButton ? &dockableWindow->isVisible : nullptr,
+                        dockableWindow->imGuiWindowFlags);
+}
+
+void End() { ImGui::End(); }
 
 namespace SplitIdsHelper
 {
@@ -87,15 +100,11 @@ namespace SplitIdsHelper
             std::cerr << "LoadSplitIds: Unexpected error: " << e.what() << std::endl;
         }
     }
-}
-
+}  // namespace SplitIdsHelper
 
 static bool gShowTweakWindow = false;
 
-void ShowThemeTweakGuiWindow_Static()
-{
-    ShowThemeTweakGuiWindow(&gShowTweakWindow);
-}
+void ShowThemeTweakGuiWindow_Static() { ShowThemeTweakGuiWindow(&gShowTweakWindow); }
 
 void MenuTheme()
 {
@@ -119,7 +128,6 @@ void MenuTheme()
         ImGui::EndMenu();
     }
 }
-
 
 namespace DockingDetails
 {
@@ -160,8 +168,8 @@ namespace DockingDetails
     {
         for (const auto& dockableWindow : dockableWindows)
         {
-            ImGui::DockBuilderDockWindow(dockableWindow->label.c_str(),
-                                         SplitIdsHelper::GetSplitId(dockableWindow->dockSpaceName));
+            ImGuiID dockId = SplitIdsHelper::GetSplitId(dockableWindow->dockSpaceName);
+            ImGui::DockBuilderDockWindow(dockableWindow->label.c_str(), dockId);
         }
     }
 
@@ -247,13 +255,16 @@ namespace DockingDetails
             }
             else
             {
-                if (win->canBeClosed)
+                // Check if window can be toggled (not locked and can be closed)
+                bool canToggle = win->canBeClosed && !win->lockLayout;
+                if (canToggle)
                 {
                     if (ImGui::MenuItem(win->label.c_str(), nullptr, win->isVisible))
                         win->isVisible = !win->isVisible;
                 }
                 else
                 {
+                    // Show as disabled (can't toggle visibility)
                     ImGui::MenuItem(win->label.c_str(), nullptr, win->isVisible, false);
                 }
             }
@@ -336,14 +347,22 @@ namespace DockingDetails
 
         ImGui::SeparatorText("Windows");
 
+        constexpr auto set_all = [](this auto self,
+                                    std::shared_ptr<DockableWindow>& dockableWindow,
+                                    bool visible) constexpr -> void
+        {
+            if (dockableWindow->canBeClosed && dockableWindow->includeInViewMenu)
+                dockableWindow->isVisible = visible;
+            for (auto& childDockableWindow : dockableWindow->dockingParams.dockableWindows)
+                self(childDockableWindow, visible);
+        };
+
         if (ImGui::MenuItem("View All##DSQSDDF"))
             for (auto& dockableWindow : runnerParams.dockingParams.dockableWindows)
-                if (dockableWindow->canBeClosed && dockableWindow->includeInViewMenu)
-                    dockableWindow->isVisible = true;
+                set_all(dockableWindow, true);
         if (ImGui::MenuItem("Hide All##DSQSDDF"))
             for (auto& dockableWindow : runnerParams.dockingParams.dockableWindows)
-                if (dockableWindow->canBeClosed && dockableWindow->includeInViewMenu)
-                    dockableWindow->isVisible = false;
+                set_all(dockableWindow, false);
 
         RenderDockableWindowViews(dockableWindows);
 
@@ -387,12 +406,42 @@ namespace DockingDetails
 
     void ImplProviderNestedDockspace(const std::shared_ptr<DockableWindow>& dockableWindow)
     {
-        // TODO: this is fucking wrong
-        ImGuiID dockSpaceId = ImGui::GetID(dockableWindow->label.c_str());
+        ImGuiID computedId = ImGui::GetID(dockableWindow->label.c_str());
+        ImGuiID dockSpaceId = computedId;
+
+        // Check if we have a restored ID from deserialization
+        if (SplitIdsHelper::ContainsSplit(dockableWindow->label))
+        {
+            ImGuiID restoredId = SplitIdsHelper::GetSplitId(dockableWindow->label);
+            if (restoredId != computedId)
+            {
+                // Verify the restored ID points to a valid root dock node before using it
+                ImGuiDockNode* restoredNode =
+                    ImGui::DockContextFindNodeByID(ImGui::GetCurrentContext(), restoredId);
+                if (restoredNode && restoredNode->IsRootNode())
+                {
+                    dockSpaceId = restoredId;
+                }
+            }
+        }
         SplitIdsHelper::SetSplitId(dockableWindow->label, dockSpaceId);
 
-        ImGui::DockSpace(
-            dockSpaceId, dockableWindow->windowSize, dockableWindow->dockingParams.mainDockSpaceNodeFlags);
+        // Apply lock flags if the layout is locked
+        ImGuiDockNodeFlags nodeFlags = dockableWindow->dockingParams.mainDockSpaceNodeFlags;
+        if (dockableWindow->lockLayout || dockableWindow->dockingParams.lockLayout)
+        {
+            // Prevent any layout modifications
+            nodeFlags |= ImGuiDockNodeFlags_NoResize;        // No resizing of splits
+            nodeFlags |= ImGuiDockNodeFlags_NoDockingSplit;  // No splitting
+            nodeFlags |= ImGuiDockNodeFlags_NoUndocking;     // No undocking
+        }
+        if (dockableWindow->lockChildren)
+        {
+            // Prevent children from being undocked or moved
+            nodeFlags |= ImGuiDockNodeFlags_NoUndocking;
+        }
+
+        ImGui::DockSpace(dockSpaceId, dockableWindow->windowSize, nodeFlags);
     }
 
     static void PropagateLayoutReset(DockingParams& dockingParams, bool layoutReset)
@@ -416,8 +465,11 @@ namespace DockingDetails
     {
         for (const auto& dockingSplit : dockingParams.dockingSplits)
         {
-            if (!SplitIdsHelper::ContainsSplit(dockingSplit.newDock))
+            bool found = SplitIdsHelper::ContainsSplit(dockingSplit.newDock);
+            if (!found)
+            {
                 return false;
+            }
         }
 
         return true;
@@ -431,7 +483,8 @@ namespace DockingDetails
 
         PropagateLayoutReset(dockingParams, dockingParams.layoutReset);
 
-        if (dockingParams.layoutReset || !GetDockSplitsExist(dockingParams))
+        bool splitsExist = GetDockSplitsExist(dockingParams);
+        if (dockingParams.layoutReset || !splitsExist)
         {
             SplitAndApplyDockingLocations(dockingParams, dockSpaceName);
             dockingParams.layoutReset = false;
@@ -457,8 +510,10 @@ namespace DockingDetails
 
         // remove windows who want to be
 
+        int i = -1;
         for (auto& dockableWindow : dockableWindows)
         {
+            i++;
             if (dockableWindow->state != DockableWindowAdditionState::AddedToHelloImGui)
             {
                 printf("[DockableWindow] %s not added to HelloImGui %d\n",
@@ -485,7 +540,9 @@ namespace DockingDetails
                         ImGui::SetNextWindowPos(dockableWindow->windowPosition,
                                                 dockableWindow->windowPositionCondition);
                     bool not_collapsed = true;
-                    if (dockableWindow->canBeClosed)
+                    // Don't show close button if window is locked or explicitly not closable
+                    bool showCloseButton = dockableWindow->canBeClosed && !dockableWindow->lockLayout;
+                    if (showCloseButton)
                         not_collapsed = ImGui::Begin(dockableWindow->label.c_str(),
                                                      &dockableWindow->isVisible,
                                                      dockableWindow->imGuiWindowFlags);
@@ -493,8 +550,25 @@ namespace DockingDetails
                         not_collapsed = ImGui::Begin(
                             dockableWindow->label.c_str(), nullptr, dockableWindow->imGuiWindowFlags);
 
+                    // Apply lock flags to the window's dock node if it's locked
+                    // This makes standalone dockable windows respect their lockLayout flag
+                    if (dockableWindow->lockLayout)
+                    {
+                        ImGuiWindow* window = ImGui::GetCurrentWindow();
+                        if (window && window->DockNode)
+                        {
+                            // Set flags to prevent this specific window from being undocked
+                            window->DockNode->SetLocalFlags(window->DockNode->LocalFlags |
+                                                            ImGuiDockNodeFlags_NoUndocking |
+                                                            ImGuiDockNodeFlags_NoResize);
+                        }
+                    }
+
                     // window rename
-                    if (not_collapsed && ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_AnyPopup)) {
+                    if (not_collapsed &&
+                        ImGui::BeginPopupContextItem(
+                            nullptr, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_AnyPopup))
+                    {
                         if (dockableWindow->customTitleBarContextFunction)
                             dockableWindow->customTitleBarContextFunction(dockableWindow);
                         ImGui::EndPopup();
@@ -508,7 +582,13 @@ namespace DockingDetails
                         ApplyDockLayout(dockableWindow->dockingParams, dockableWindow->label.c_str());
                     }
                     if (!dockableWindow->dockingParams.dockableWindows.empty())
+                    {
+                        for (auto& childWindow : dockableWindow->dockingParams.dockableWindows)
+                        {
+                            childWindow->parentIsVisibleOrNull = dockableWindow->isVisible;
+                        }
                         ShowDockableWindows(dockableWindow->dockingParams.dockableWindows);
+                    }
                     ImGui::End();
 
                     if (shallFocusWindow)
@@ -778,8 +858,18 @@ namespace DockingDetails
     {
         DoCreateFullScreenImGuiWindow(runnerParams, true);
         ImGuiID mainDockspaceId = ImGui::GetID("MainDockSpace");
-        ImGui::DockSpace(
-            mainDockspaceId, ImVec2(0.0f, 0.0f), runnerParams.dockingParams.mainDockSpaceNodeFlags);
+
+        // Apply lock flags if the layout is locked
+        ImGuiDockNodeFlags nodeFlags = runnerParams.dockingParams.mainDockSpaceNodeFlags;
+        if (runnerParams.dockingParams.lockLayout)
+        {
+            // Prevent any layout modifications
+            nodeFlags |= ImGuiDockNodeFlags_NoResize;        // No resizing of splits
+            nodeFlags |= ImGuiDockNodeFlags_NoDockingSplit;  // No splitting
+            nodeFlags |= ImGuiDockNodeFlags_NoUndocking;     // No undocking
+        }
+
+        ImGui::DockSpace(mainDockspaceId, ImVec2(0.0f, 0.0f), nodeFlags);
         SplitIdsHelper::SetSplitId("MainDockSpace", mainDockspaceId);
     }
 
@@ -865,11 +955,12 @@ std::optional<ImGuiID> DockingParams::dockSpaceIdFromName(const std::string& doc
 namespace AddDockableWindowHelper
 {
     // Adding dockable windows is a three-step process:
-    // - First, the user calls `AddDockableWindow()`: the dockable window is added to gDockableWindowsToAdd
+    // - First, the user calls `AddDockableWindow()`: the dockable window is added to
+    // gDockableWindowsToAdd
     //   with the state `DockableWindowAdditionState::Waiting`
     // - Then, in the first callback, the dockable window is added to ImGui as a dummy window:
-    //   we call `ImGui::Begin()` and `ImGui::End()` to create the window, but we don't draw anything in it,
-    //   then we call `ImGui::DockBuilderDockWindow()` to dock the window to the correct dockspace
+    //   we call `ImGui::Begin()` and `ImGui::End()` to create the window, but we don't draw anything in
+    //   it, then we call `ImGui::DockBuilderDockWindow()` to dock the window to the correct dockspace
     // - Finally, in the second callback, the dockable window is added to
     // HelloImGui::RunnerParams.dockingParams.dockableWindows
 
@@ -926,7 +1017,30 @@ namespace AddDockableWindowHelper
                             dockableWindow.dockableWindow->state =
                                 DockableWindowAdditionState::AddedAsDummyToImGui;
                         }
-                        // wait for dockspace to appear
+                        else if (dockableWindow.waitingFramesBeforeAdd-- <= 0)
+                        {
+                            // failed to find the dockspace, give up
+                            fprintf(stderr,
+                                    "AddDockableWindowHelper::Callback_1_GuiRender: Failed to find dockspace "
+                                    "'%s' for window '%s', giving up after waiting\n",
+                                    dockSpaceName.c_str(),
+                                    dockableWindow.dockableWindow->label.c_str());
+
+                            ImGui::Begin(dockableWindow.dockableWindow->label.c_str());
+                            ImGui::Dummy(ImVec2(10, 10));
+
+                            // since this render function may try to add additional windows to
+                            // gDockableWindowsToAdd, we need to ensure that the caller cannot change the
+                            // vector while we are iterating over it
+                            // dockableWindow.dockableWindow->GuiFunction();
+                            ImGui::End();
+
+                            ImGui::DockBuilderDockWindow(dockableWindow.dockableWindow->label.c_str(),
+                                                         dockId.value());
+
+                            dockableWindow.dockableWindow->state =
+                                DockableWindowAdditionState::AddedAsDummyToImGui;
+                        }
                     }
                 }
                 else

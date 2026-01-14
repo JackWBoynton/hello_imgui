@@ -1,24 +1,22 @@
 # Application parameters
 
-
-__HelloImGui::Run()__ will run an application with a single call.
+**HelloImGui::Run()** will run an application with a single call.
 
 Three signatures are provided:
 
-* `HelloImGui::Run(RunnerParams &)`: full signature, the most customizable version.
+- `HelloImGui::Run(RunnerParams &)`: full signature, the most customizable version.
   Runs an application whose params and Gui are provided by runnerParams.
 
-* `HelloImGui::Run(const SimpleRunnerParams&)`:
+- `HelloImGui::Run(const SimpleRunnerParams&)`:
   Runs an application, using simpler params.
 
-* `HelloImGui::Run(guiFunction, windowTitle, windowSize, windowSizeAuto=false, restoreLastWindowGeometry=false, fpsIdle=10)`
+- `HelloImGui::Run(guiFunction, windowTitle, windowSize, windowSizeAuto=false, restoreLastWindowGeometry=false, fpsIdle=10)`
   Runs an application, by providing the Gui function, the window title, etc.
 
 Although the API is extremely simple, it is highly customizable, and you can set many options by filling
-the elements in the `RunnerParams` struct, or in the simpler  `SimpleRunnerParams`.
+the elements in the `RunnerParams` struct, or in the simpler `SimpleRunnerParams`.
 
-__HelloImGui::GetRunnerParams()__  will return the runnerParams of the current application.
-
+**HelloImGui::GetRunnerParams()** will return the runnerParams of the current application.
 
 # Diagram
 
@@ -30,10 +28,9 @@ The diagram below summarize all the possible settings and callbacks (which are e
 
 See [runner_params.h](https://github.com/pthom/hello_imgui/blob/master/src/hello_imgui/runner_params.h).
 
-
 ## Simple runner params
 
-```cpp
+````cpp
 
 // SimpleRunnerParams is a struct that contains simpler params adapted for simple use cases.
 //For example, this is sufficient to run an application:
@@ -86,7 +83,7 @@ struct SimpleRunnerParams
 
     RunnerParams ToRunnerParams() const;
 };
-```
+````
 
 ---
 
@@ -225,7 +222,6 @@ struct RunnerParams
 
 ### Backend selection
 
-
 ```cpp
 
 // You can select the platform backend type (SDL, GLFW) and the rendering backend type
@@ -256,12 +252,12 @@ enum class RendererBackendType
 
 ```
 
-
 # Runner callbacks
 
 See [runner_callbacks.h](https://github.com/pthom/hello_imgui/blob/master/src/hello_imgui/runner_callbacks.h).
 
 ## Callbacks types
+
 ```cpp
 
 // VoidFunctionPointer can hold any void(void) function.
@@ -280,6 +276,7 @@ inline AnyEventCallback EmptyEventCallback() {return {}; }
 ```
 
 ## RunnerCallbacks
+
 ```cpp
 // RunnerCallbacks is a struct that contains the callbacks
 // that are called by the application
@@ -436,8 +433,8 @@ struct RunnerCallbacks
 };
 ```
 
-
 ## Edge Toolbars Callbacks
+
 More details on `RunnerParams.edgesToolbars` (a dictionary of `EdgeToolbar`, per edge type)
 
 ```cpp
@@ -455,6 +452,7 @@ struct RunnerCallbacks
 ```
 
 Where:
+
 ```cpp
 
 // EdgeToolbarType: location of an Edge Toolbar
@@ -524,7 +522,7 @@ struct MobileCallbacks
 };
 ```
 
-----
+---
 
 # Application window params
 
@@ -623,7 +621,7 @@ struct AppWindowParams
 
 ## WindowGeometry
 
-```cpp
+````cpp
 //
 // WindowGeometry is a struct that defines the window geometry.
 struct WindowGeometry
@@ -704,8 +702,9 @@ struct WindowGeometry
     //  (use sizeAuto at startup).
     bool resizeAppWindowAtNextFrame = false;
 };
-```
-----
+````
+
+---
 
 # ImGui window params
 
@@ -901,6 +900,7 @@ struct FpsIdling
 Optionally, DPI parameters can be fine-tuned. For detailed info, see [handling screens with high dpi](https://pthom.github.io/hello_imgui/book/doc_api.html#handling-screens-with-high-dpi)
 
 Source: [dpi_aware.h](https://github.com/pthom/hello_imgui/blob/master/src/hello_imgui/dpi_aware.h)
+
 ```cpp
 
 //
@@ -958,30 +958,28 @@ struct DpiAwareParams
 
 ```
 
-
-----
+---
 
 # Docking
 
 See [docking_params.h](https://github.com/pthom/hello_imgui/blob/master/src/hello_imgui/docking_params.h).
 
-
 HelloImGui makes it easy to use dockable windows
- (based on ImGui [docking branch](https://github.com/ocornut/imgui/tree/docking)).
+(based on ImGui [docking branch](https://github.com/ocornut/imgui/tree/docking)).
 
-You can define several layouts and switch between them:  each layout which will remember
- the user modifications and the list of opened windows
+You can define several layouts and switch between them: each layout which will remember
+the user modifications and the list of opened windows
 
 HelloImGui will then provide a "View" menu with options to show/hide the dockable windows,
- restore the default layout, switch between layouts, etc.
+restore the default layout, switch between layouts, etc.
 
 ![demo docking](https://traineq.org/ImGuiBundle/HelloImGuiLayout.gif)
 
-* Source for this example: https://github.com/pthom/hello_imgui/tree/master/src/hello_imgui_demos/hello_imgui_demodocking
-* [Video explanation on YouTube](https://www.youtube.com/watch?v=XKxmz__F4ow) (5 minutes)
-
+- Source for this example: https://github.com/pthom/hello_imgui/tree/master/src/hello_imgui_demos/hello_imgui_demodocking
+- [Video explanation on YouTube](https://www.youtube.com/watch?v=XKxmz__F4ow) (5 minutes)
 
 The different available layouts are provided inside RunnerParams via the two members below:
+
 ```cpp
 struct RunnerParams
 {
@@ -1017,11 +1015,9 @@ struct DockingParams
 ```
 
 Inside DockingParams, the member `dockingSplits` specifies the layout, and the member `dockableWindows`
- specifies the list of dockable windows, along with their default location, and their code (given by lambdas).
-
+specifies the list of dockable windows, along with their default location, and their code (given by lambdas).
 
 ## Docking Params: Example usage
-
 
 Below is an example that shows how to instantiate a layout:
 
@@ -1102,7 +1098,6 @@ runnerParams.dockingParams.dockableWindows = CreateDockableWindows();
 HelloImGui::Run(runnerParams);
 ```
 
-
 ## Docking Splits
 
 ```cpp
@@ -1120,21 +1115,21 @@ struct DockingSplit
     //  You should start by partitioning this space, in order to create a new dock space.
     DockSpaceName initialDock;
 
-    // `newDock`: _DockSpaceName (aka string)_. 
+    // `newDock`: _DockSpaceName (aka string)_.
     //  id of the new dock space that will be created.
     DockSpaceName newDock;
 
-    // `direction`: *ImGuiDir_* 
+    // `direction`: *ImGuiDir_*
     //  (enum with ImGuiDir_Down, ImGuiDir_Down, ImGuiDir_Left, ImGuiDir_Right)*
     //  Direction where this dock space should be created.
     ImGuiDir direction;
 
-    // `ratio`: _float, default=0.25f_. 
+    // `ratio`: _float, default=0.25f_.
     //  Ratio of the initialDock size that should be used by the new dock space.
     float ratio = 0.25f;
 
-    // `nodeFlags`: *ImGuiDockNodeFlags_ (enum)*. 
-    //  Flags to apply to the new dock space 
+    // `nodeFlags`: *ImGuiDockNodeFlags_ (enum)*.
+    //  Flags to apply to the new dock space
     //  (enable/disable resizing, splitting, tab bar, etc.)
     ImGuiDockNodeFlags nodeFlags = ImGuiDockNodeFlags_None;
 
@@ -1222,6 +1217,7 @@ struct DockableWindow
     //  When to apply the window position.
     ImGuiCond  windowPositionCondition = ImGuiCond_FirstUseEver;
 
+    bool parentIsVisibleOrNull = true;
 
     // --------------- Constructor ------------------------------
     // Constructor

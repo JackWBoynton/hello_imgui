@@ -40,21 +40,25 @@ namespace HelloImGui { namespace BackendApi
 
     static void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     {
+        // Post empty event to wake up the event loop for smoother mouse interaction
         TriggerRefresh(window);
     }
 
     static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     {
+        // Post empty event to wake up the event loop for responsive button clicks
         TriggerRefresh(window);
     }
 
     static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
     {
+        // Post empty event to wake up the event loop for smooth scrolling
         TriggerRefresh(window);
     }
 
     static void WindowFocusCallback(GLFWwindow* window, int focused)
     {
+        // Post empty event to wake up the event loop when window gains/loses focus
         TriggerRefresh(window);
     }
 
