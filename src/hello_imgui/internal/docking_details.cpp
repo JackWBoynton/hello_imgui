@@ -347,14 +347,17 @@ namespace DockingDetails
 
         ImGui::SeparatorText("Windows");
 
-        constexpr auto set_all = [](this auto self,
-                                    std::shared_ptr<DockableWindow>& dockableWindow,
-                                    bool visible) constexpr -> void
+        auto set_all_impl = [](auto& self_ref,
+                                std::shared_ptr<DockableWindow>& dockableWindow,
+                                bool visible) -> void
         {
             if (dockableWindow->canBeClosed && dockableWindow->includeInViewMenu)
                 dockableWindow->isVisible = visible;
             for (auto& childDockableWindow : dockableWindow->dockingParams.dockableWindows)
-                self(childDockableWindow, visible);
+                self_ref(self_ref, childDockableWindow, visible);
+        };
+        auto set_all = [&set_all_impl](std::shared_ptr<DockableWindow>& dockableWindow, bool visible) {
+            set_all_impl(set_all_impl, dockableWindow, visible);
         };
 
         if (ImGui::MenuItem("View All##DSQSDDF"))
