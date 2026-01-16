@@ -322,7 +322,7 @@ static SvgRgbaImage priv_SvgToRgba(
 
 
     // Clear the surface with transparent color
-    plutovg_color_t transparent = PLUTOVG_MAKE_COLOR(1, 1, 1, 0);
+    plutovg_color_t transparent = {1, 1, 1, 0};
     //plutovg_surface_clear(surface, &transparent);
 
 
