@@ -294,6 +294,19 @@ function(him_add_hello_imgui)
           target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC implot)
       endif()
 
+      if (HELLOIMGUI_USE_IMGUIZMO_CMAKE_PACKAGE)
+          find_package(imguizmo CONFIG REQUIRED)
+          target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC imguizmo::imguizmo)
+          get_target_property(IMGUIZMO_INCLUDES imguizmo::imguizmo INTERFACE_INCLUDE_DIRECTORIES)
+          target_include_directories(${HELLOIMGUI_TARGET} PUBLIC
+              ${IMGUIZMO_INCLUDES}
+          )
+      else()
+          if (TARGET imguizmo)
+              target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC imguizmo)
+          endif()
+      endif()
+
       add_library(hello-imgui::hello_imgui ALIAS hello_imgui)
       him_add_installable_dependency(${HELLOIMGUI_TARGET})
 endfunction()####################################################################
@@ -353,6 +366,29 @@ function(him_build_implot)
     endif()
 endfunction()
 
+function(him_build_imguizmo)
+    # check that HELLOIMGUI_USE_IMGUI_CMAKE_PACKAGE is on if a package is found
+    find_package(imguizmo CONFIG QUIET)
+    if(imguizmo_FOUND AND NOT HELLOIMGUI_USE_IMGUIZMO_CMAKE_PACKAGE)
+        message(FATAL_ERROR "
+            imguizmo is found via find_package(imguizmo), but HELLOIMGUI_USE_IMGUIZMO_CMAKE_PACKAGE is OFF.
+            You should either
+                - set -DHELLOIMGUI_USE_IMGUIZMO_CMAKE_PACKAGE=ON (this will use the imguizmo CMake package)
+                - or uninstall the imguizmo package (e.g. vcpkg remove imguizmo)
+        ")
+    endif()
+
+    message(STATUS "HELLOIMGUI_USE_IMGUIZMO_CMAKE_PACKAGE is ${HELLOIMGUI_USE_IMGUIZMO_CMAKE_PACKAGE}")
+    if (HELLOIMGUI_USE_IMGUIZMO_CMAKE_PACKAGE)
+        set(HELLOIMGUI_BUILD_IMGUIZMO OFF CACHE BOOL "" FORCE)
+        find_package(imguizmo CONFIG REQUIRED)
+    else()
+        if (HELLOIMGUI_BUILD_IMGUIZMO)
+            _him_do_build_imguizmo()
+        endif()
+    endif()
+endfunction()
+
 function(him_install_imgui)
     if(HELLOIMGUI_INSTALL)
         if(NOT TARGET imgui)
@@ -403,6 +439,20 @@ function(him_install_implot)
             ${HELLOIMGUI_IMPLOT_SOURCE_DIR}/*.h
         )
         install(FILES ${implot_headers} DESTINATION include COMPONENT Development)
+    endif()
+endfunction()
+
+function(him_install_imguizmo)
+    if(HELLOIMGUI_INSTALL)
+        if(NOT TARGET imguizmo)
+            return()
+        endif()
+
+        install(TARGETS imguizmo DESTINATION ./lib/ COMPONENT Development)
+        file(GLOB imguizmo_headers
+            ${HELLOIMGUI_IMGUIZMO_SOURCE_DIR}/*.h
+        )
+        install(FILES ${imguizmo_headers} DESTINATION include COMPONENT Development)
     endif()
 endfunction()
 
@@ -464,6 +514,21 @@ function(_him_do_build_implot)
 
     him_add_installable_dependency(implot)
     hello_imgui_msvc_target_set_folder(implot ${HELLOIMGUI_SOLUTIONFOLDER}/external)
+endfunction()
+
+function(_him_do_build_imguizmo)
+    file(GLOB imguizmo_sources ${HELLOIMGUI_IMGUIZMO_SOURCE_DIR}/*.h ${HELLOIMGUI_IMGUIZMO_SOURCE_DIR}/*.cpp)
+    if (HELLO_IMGUI_IMGUIZMO_SHARED)
+        add_library(imguizmo SHARED ${imguizmo_sources})
+    else()
+        add_library(imguizmo ${imguizmo_sources})
+    endif()
+
+    target_include_directories(imguizmo PUBLIC $<BUILD_INTERFACE:${HELLOIMGUI_IMGUIZMO_SOURCE_DIR}>)
+    target_link_libraries(imguizmo PRIVATE imgui)
+
+    him_add_installable_dependency(imguizmo)
+    hello_imgui_msvc_target_set_folder(imguizmo ${HELLOIMGUI_SOLUTIONFOLDER}/external)
 endfunction()
 
 function(_him_add_freetype_to_imgui)
@@ -1411,6 +1476,7 @@ function(him_main_add_hello_imgui_library)
     him_add_stb_image()
     him_build_imgui()
     him_build_implot()
+    him_build_imguizmo()
     him_add_hello_imgui()
     him_add_nlohmann_json()
 
@@ -1458,4 +1524,5 @@ function(him_main_add_hello_imgui_library)
     him_install()
     him_install_imgui()
     him_install_implot()
+    him_install_imguizmo()
 endfunction()

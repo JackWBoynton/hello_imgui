@@ -202,6 +202,18 @@ if (NOT DEFINED HELLOIMGUI_BUILD_IMPLOT)
 endif()
 
 #------------------------------------------------------------------------------
+# Build options / ImGuizmo
+#------------------------------------------------------------------------------
+# HELLOIMGUI_IMGUIZMO_SOURCE_DIR: folder containing the sources for imguizmo (by default in the submodule external/imguizmo)
+if (NOT DEFINED HELLOIMGUI_IMGUIZMO_SOURCE_DIR)
+    set(HELLOIMGUI_IMGUIZMO_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/external/imguizmo" CACHE STRING "Source dir of ImGuizmo")
+endif()
+# if HELLOIMGUI_BUILD_IMGUIZMO, imguizmo will be built as part of the build of HelloImGui
+if (NOT DEFINED HELLOIMGUI_BUILD_IMGUIZMO)
+    option(HELLOIMGUI_BUILD_IMGUIZMO "Build ImGuizmo as part of HelloImGui" ON)
+endif()
+
+#------------------------------------------------------------------------------
 # Common build options / HelloImGui
 #------------------------------------------------------------------------------
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
