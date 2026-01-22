@@ -117,8 +117,7 @@ static IMPLOT_INLINE float  ImInvSqrt(float x) { return 1.0f / sqrtf(x); }
     macro(T, char)            \
     macro(T, unsigned char)   \
     macro(T, long long)       \
-    macro(T, unsigned long long) \
-    macro(T, signed long long)
+    macro(T, unsigned long long)
 
 // Iterate over all X types
 #define _FOR_EACH_XY(macro) \
@@ -131,8 +130,7 @@ static IMPLOT_INLINE float  ImInvSqrt(float x) { return 1.0f / sqrtf(x); }
     _FOR_EACH_Y(char, macro) \
     _FOR_EACH_Y(unsigned char, macro) \
     _FOR_EACH_Y(long long, macro) \
-    _FOR_EACH_Y(unsigned long long, macro) \
-    _FOR_EACH_Y(signed long long, macro)
+    _FOR_EACH_Y(unsigned long long, macro)
 
 namespace ImPlot {
 
