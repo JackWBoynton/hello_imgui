@@ -116,6 +116,8 @@ static IMPLOT_INLINE float  ImInvSqrt(float x) { return 1.0f / sqrtf(x); }
     macro(T, unsigned short)  \
     macro(T, char)            \
     macro(T, unsigned char)   \
+    macro(T, long)            \
+    macro(T, unsigned long)   \
     macro(T, long long)       \
     macro(T, unsigned long long)
 
@@ -129,6 +131,8 @@ static IMPLOT_INLINE float  ImInvSqrt(float x) { return 1.0f / sqrtf(x); }
     _FOR_EACH_Y(unsigned short, macro) \
     _FOR_EACH_Y(char, macro) \
     _FOR_EACH_Y(unsigned char, macro) \
+    _FOR_EACH_Y(long, macro) \
+    _FOR_EACH_Y(unsigned long, macro) \
     _FOR_EACH_Y(long long, macro) \
     _FOR_EACH_Y(unsigned long long, macro)
 
