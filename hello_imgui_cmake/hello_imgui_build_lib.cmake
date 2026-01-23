@@ -507,6 +507,11 @@ function(_him_do_build_implot)
     target_include_directories(implot PUBLIC $<BUILD_INTERFACE:${HELLOIMGUI_IMPLOT_SOURCE_DIR}>)
     target_link_libraries(implot PRIVATE imgui)
 
+    # Required for MSVC due to large number of template instantiations
+    if (MSVC)
+        target_compile_options(implot PRIVATE /bigobj)
+    endif()
+
     # TODO: @jboynton is this really what we need here?
     #if (WIN32)
     #    target_compile_definitions(implot PRIVATE EXPORT_SYMBOLS=1)
