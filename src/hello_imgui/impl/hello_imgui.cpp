@@ -428,6 +428,15 @@ void ChangeWindowSize(const ScreenSize &windowSize)
     gLastRunner->ChangeWindowSize(windowSize);
 }
 
+ScreenBounds GetWindowBounds()
+{
+    return gLastRunner->GetWindowBounds();
+}
+
+void SetWindowBounds(const ScreenBounds &bounds)
+{
+    gLastRunner->SetWindowBounds(bounds);
+}
 
 void UseWindowFullMonitorWorkArea()
 {

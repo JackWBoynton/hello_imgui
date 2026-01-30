@@ -42,6 +42,9 @@ public:
     void ChangeWindowSize(ScreenSize windowSize);
     void UseWindowFullMonitorWorkArea();
 
+    ScreenBounds GetWindowBounds();
+    void SetWindowBounds(const ScreenBounds& bounds);
+
     void LayoutSettings_SwitchLayout(const std::string& layoutName);
     bool ShouldRemoteDisplay();
 

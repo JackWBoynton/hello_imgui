@@ -1,8 +1,10 @@
 #pragma once
 #include "hello_imgui/imgui_default_settings.h"
+#include "hello_imgui/screen_bounds.h"
 #include "imgui.h"
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
