@@ -73,6 +73,15 @@ namespace SplitIdsHelper
         return h.ImGuiSplitIDs;
     }
 
+    std::string SaveSplitIds()
+    {
+        assert(GHelloImGui != nullptr && "GHelloImGui must be initialized before using SplitIdsHelper");
+        HelloImGuiContext& h = *GHelloImGui;
+        nlohmann::json j;
+        j["gImGuiSplitIDs"] = h.ImGuiSplitIDs;
+        return j.dump();
+    }
+
     void LoadSplitIds(const std::string& jsonStr)
     {
         assert(GHelloImGui != nullptr && "GHelloImGui must be initialized before using SplitIdsHelper");
