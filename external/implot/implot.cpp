@@ -701,7 +701,7 @@ bool ShowLegendEntries(ImPlotItemGroup& items, const ImRect& legend_bb, bool hov
         gp.SortItems = &items;
         qsort(indices.Data, num_items, sizeof(int), LegendSortingComp);
     }
-    bool ctrl_down =  ImGui::IsKeyDown(ImGuiKey_ModCtrl);
+    bool ctrl_down =  ImGui::IsKeyDown(ImGuiMod_Ctrl);
     // render
     for (int i = 0; i < num_items; ++i) {
         const int idx           = indices[i];
