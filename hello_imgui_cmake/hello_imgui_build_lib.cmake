@@ -635,6 +635,7 @@ function(_him_fetch_and_compile_plutovg_plutosvg)
         GIT_TAG        v1.0.0
         GIT_PROGRESS TRUE
     )
+    set(PLUTOVG_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(plutovg)
 
     # Fetch plutosvg at configure time, then compile manually at build time
@@ -696,8 +697,9 @@ function(_him_add_freetype_plutosvg_to_imgui)
     # Option 2: download and compile plutosvg
     set(can_download_freetype (HELLOIMGUI_DOWNLOAD_FREETYPE_IF_NEEDED OR HELLOIMGUI_FREETYPE_STATIC))
     if (HELLOIMGUI_FETCH_FORBIDDEN OR NOT can_download_freetype)
-        message(WARNING "Cannot add plutosvg because fetching is forbidden")
-        return()
+        target_link_libraries(imgui PUBLIC plutosvg)
+        target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG)
+        set(HELLOIMGUI_FREETYPE_SELECTED_INFO "${HELLOIMGUI_FREETYPE_SELECTED_INFO} - use plutosvg" CACHE INTERNAL "" FORCE)
     else()
         _him_fetch_and_compile_plutovg_plutosvg()
         target_link_libraries(imgui PUBLIC plutosvg)
@@ -724,7 +726,9 @@ function(him_sanity_checks)
     endif()
 
     if (no_backend_option_chosen AND NOT HELLOIMGUI_USING_VCPKG_TOOLCHAIN)
-        # use SDL for emscripten and iOS, GLFW for the rest
+        # use SDL2 for emscripten and iOS, GLFW for the rest
+        # (We may want to use glfw for emscripten too, using pongasoft/emscripten-glfw
+        #  which is quite good. However this requires more testing)
         if (EMSCRIPTEN OR IOS)
             set(HELLOIMGUI_USE_SDL2 ON CACHE BOOL "" FORCE)
             set(HELLOIMGUI_HAS_OPENGL3 ON CACHE BOOL "" FORCE)
@@ -1220,10 +1224,19 @@ endfunction()
 # Glfw platform backend: API = him_use_glfw_backend
 ###################################################################################################
 function(him_use_glfw3_backend target)
-    _him_fetch_glfw_if_needed()
-    if (NOT TARGET glfw) # if glfw is not built as part of the whole build, find it
-        find_package(glfw3 CONFIG REQUIRED)
+    if (EMSCRIPTEN)
+        # Use pongasoft/emscripten-glfw contrib port of glfw3 for emscripten
+        # cf https://github.com/pongasoft/emscripten-glfw
+        message(STATUS "HelloImGui: using pongasoft/emscripten-glfw (--use-port=contrib.glfw3)")
+        target_compile_options(${HELLOIMGUI_TARGET} PUBLIC --use-port=contrib.glfw3)
+        target_link_options(${HELLOIMGUI_TARGET} PUBLIC --use-port=contrib.glfw3)
+    else()
+        _him_fetch_glfw_if_needed()
+        if (NOT TARGET glfw) # if glfw is not built as part of the whole build, find it
+            find_package(glfw3 CONFIG REQUIRED)
+        endif()
     endif()
+
     target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC glfw)
 
     # vcpkg will have added those files to imgui

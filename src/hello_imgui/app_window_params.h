@@ -3,9 +3,6 @@
 #include "hello_imgui/screen_bounds.h"
 #include <string>
 
-#ifdef __APPLE__
-#include <TargetConditionals.h>
-#endif
 
 namespace HelloImGui
 {
@@ -186,6 +183,13 @@ struct AppWindowParams
     // This is taken into account dynamically (you can show/hide the window with this).
     // Full screen windows cannot be hidden.
     bool hidden = false;
+
+    // `topMost`: _bool, default = false_. Should the window stay on top of other windows.
+    // This is taken into account dynamically (you can change this at runtime).
+    // Note: This is only supported on desktop platforms (Windows, macOS, Linux).
+    // On mobile platforms (iOS, Android) and web (Emscripten), this setting is ignored.
+    // This setting is also ignored when the window is in fullscreen mode.
+    bool topMost = false;
 
 
     // --------------- Borderless window params ------------------

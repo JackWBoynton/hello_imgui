@@ -56,18 +56,18 @@ bool _CheckAdditionLayoutNamesUniqueness(const RunnerParams &runnerParams)
 //
 // Static instances to store the last runner and its parameters
 // -------------------------------------------------------------
-// gLastRunnerParamsOpt may contain a valid value if Renderer(const RunnerParams& ) was used
-std::optional<RunnerParams> gLastRunnerParamsOpt;
-// gLastRunnerParamsUserPointer may contain a valid value if Run(RunnerParams& ) was used
-// (we may modify the user's runnerParams in this case)
+// gLastRunnerParamsUserPointer contains a pointer to the user's runnerParams
+// This is used for both Run() and ManualRender::SetupFromRunnerParams()
 static RunnerParams* gLastRunnerParamsUserPointer = nullptr;
+// gStoredRunnerParams stores a copy of RunnerParams when created from SimpleRunnerParams or GuiFunction
+// This is necessary because SetupFromRunnerParams keeps a pointer to the runnerParams,
+// so we need to keep it alive between Setup and TearDown
+static std::optional<RunnerParams> gStoredRunnerParams;
 // a pointer to the current AbstractRunner
 static std::unique_ptr<AbstractRunner> gLastRunner;
 
 static RunnerParams* Priv_CurrentRunnerParamsPtr()
 {
-    if (gLastRunnerParamsOpt.has_value())
-        return &gLastRunnerParamsOpt.value();
     if (gLastRunnerParamsUserPointer != nullptr)
         return gLastRunnerParamsUserPointer;
     return nullptr;
@@ -104,13 +104,12 @@ static void Priv_SetupRunner(RunnerParams &passedUserParams, SetupMode setupMode
         throw std::runtime_error("Only one instance of `HelloImGui::Renderer` can exist at a time.");
 #endif
     gSetupMode = setupMode;
-    bool isUserPointer = (setupMode == SetupMode::Run);  // When using HelloImGui::Run, we may modify the user's runnerParams
+    // Both Run and ManualRender::SetupFromRunnerParams now use a user pointer
+    // to allow modifications to the user's runnerParams
     bool shallSetupTearDown = (setupMode == SetupMode::Renderer);  // When using HelloImGui::Renderer, we shall call Setup/TearDown()
 
-    if (!isUserPointer)
-        gLastRunnerParamsOpt = passedUserParams; // Store a copy of the user's runnerParams
-    else
-        gLastRunnerParamsUserPointer = &passedUserParams; // Store a pointer to the user's runnerParams
+    // Store a pointer to the user's runnerParams
+    gLastRunnerParamsUserPointer = &passedUserParams;
 
     IM_ASSERT(Priv_CurrentRunnerParamsPtr() != nullptr);
     RunnerParams &runnerParams = *Priv_CurrentRunnerParamsPtr();
@@ -135,8 +134,8 @@ static void Priv_TearDown()
         gLastRunner->TearDown(false);
     gLastRunner = nullptr;
     gRendererInstanceCount = 0;
-    gLastRunnerParamsOpt.reset();
     gLastRunnerParamsUserPointer = nullptr;
+    gStoredRunnerParams.reset();  // Clear the stored RunnerParams
 }
 
 
@@ -170,30 +169,31 @@ namespace ManualRender
     }
 
     // Initializes the renderer with the full customizable `RunnerParams`.
-    // A distinct copy of `RunnerParams` is stored internally.
-    void SetupFromRunnerParams(const RunnerParams& runnerParams)
+    // A reference to the user's `RunnerParams` is kept internally.
+    void SetupFromRunnerParams(RunnerParams& runnerParams)
     {
         TrySwitchToInitialized();
-        RunnerParams runnerParamsCopy = runnerParams;
-        Priv_SetupRunner(runnerParamsCopy, SetupMode::Renderer);
+        Priv_SetupRunner(runnerParams, SetupMode::Renderer);
     }
 
     // Initializes the renderer with `SimpleRunnerParams`.
     void SetupFromSimpleRunnerParams(const SimpleRunnerParams& simpleParams)
     {
         TrySwitchToInitialized();
-        RunnerParams fullParams = simpleParams.ToRunnerParams();
-        Priv_SetupRunner(fullParams, SetupMode::Renderer);
+        // Store the runnerParams to keep it alive for the entire lifecycle
+        gStoredRunnerParams = simpleParams.ToRunnerParams();
+        Priv_SetupRunner(gStoredRunnerParams.value(), SetupMode::Renderer);
     }
 
     // Initializes the renderer with a simple GUI function and additional parameters.
     void SetupFromGuiFunction(
         const VoidFunction& guiFunction,
-                              const std::string& windowTitle,
-                              bool windowSizeAuto,
-                              bool windowRestorePreviousGeometry,
-                              const ScreenSize& windowSize,
-        float fpsIdle
+        const std::string& windowTitle,
+        bool windowSizeAuto,
+        bool windowRestorePreviousGeometry,
+        const ScreenSize& windowSize,
+        float fpsIdle,
+        bool topMost
     )
     {
         TrySwitchToInitialized();
@@ -204,8 +204,10 @@ namespace ManualRender
         params.windowRestorePreviousGeometry = windowRestorePreviousGeometry;
         params.windowSize = windowSize;
         params.fpsIdle = fpsIdle;
-        RunnerParams fullParams = params.ToRunnerParams();
-        Priv_SetupRunner(fullParams, SetupMode::Renderer);
+        params.topMost = topMost;
+        // Store the runnerParams to keep it alive for the entire lifecycle
+        gStoredRunnerParams = params.ToRunnerParams();
+        Priv_SetupRunner(gStoredRunnerParams.value(), SetupMode::Renderer);
     }
 
     // Renders the current frame. Should be called regularly to maintain the application's responsiveness.
@@ -243,11 +245,12 @@ void Run(const SimpleRunnerParams& simpleRunnerParams)
 
 void Run(
     const VoidFunction& guiFunction,
-         const std::string& windowTitle,
-         bool windowSizeAuto,
-         bool windowRestorePreviousGeometry,
-         const ScreenSize& windowSize,
-    float fpsIdle
+    const std::string& windowTitle,
+    bool windowSizeAuto,
+    bool windowRestorePreviousGeometry,
+    const ScreenSize& windowSize,
+    float fpsIdle,
+    bool topMost
 )
 {
     SimpleRunnerParams params;
@@ -257,6 +260,7 @@ void Run(
     params.windowRestorePreviousGeometry = windowRestorePreviousGeometry;
     params.windowSize = windowSize;
     params.fpsIdle = fpsIdle;
+    params.topMost = topMost;
     Run(params);
 }
 
@@ -375,7 +379,9 @@ float FrameRate(float durationForMean)
 
 std::string PlatformBackendTypeToString(PlatformBackendType platformBackendType)
 {
-    if (platformBackendType == PlatformBackendType::Glfw)
+    if (platformBackendType == PlatformBackendType::FirstAvailable)
+        return "FirstAvailable";
+    else if (platformBackendType == PlatformBackendType::Glfw)
         return "Glfw";
     else if (platformBackendType == PlatformBackendType::Sdl)
         return "Sdl";
@@ -387,7 +393,9 @@ std::string PlatformBackendTypeToString(PlatformBackendType platformBackendType)
 
 std::string RendererBackendTypeToString(RendererBackendType rendererBackendType)
 {
-    if (rendererBackendType == RendererBackendType::OpenGL3)
+    if (rendererBackendType == RendererBackendType::FirstAvailable)
+        return "FirstAvailable";
+    else if (rendererBackendType == RendererBackendType::OpenGL3)
         return "OpenGL3";
     else if (rendererBackendType == RendererBackendType::Vulkan)
         return "Vulkan";

@@ -84,7 +84,8 @@ void Run(
          bool windowSizeAuto = false,
          bool windowRestorePreviousGeometry = false,
     const ScreenSize &windowSize = DefaultWindowSize,
-    float fpsIdle = 10.f
+    float fpsIdle = 10.f,
+    bool topMost = false
 );
 
 // =========================== HelloImGui::ManualRender ==================================
@@ -128,13 +129,13 @@ namespace ManualRender
     //     By default,
     //       - On Emscripten, `ManualRender::Render()` will return immediately to avoid blocking the main thread.
     //       - On other platforms, it will sleep
-    //  2. If initialized with `RunnerParams`, a copy of the `RunnerParams` will be made
+    //  2. If initialized with `RunnerParams`, a reference to the user's `RunnerParams` is kept
     //     (which can be accessed with `HelloImGui::GetRunnerParams()`).
 
     // Initializes the rendering with the full customizable `RunnerParams`.
     // This will initialize the platform backend (SDL, Glfw, etc.) and the rendering backend (OpenGL, Vulkan, etc.).
-    // A distinct copy of `RunnerParams` is stored internally.
-    void SetupFromRunnerParams(const RunnerParams& runnerParams);
+    // A reference to the user's `RunnerParams` is kept internally (similar to HelloImGui::Run).
+    void SetupFromRunnerParams(RunnerParams& runnerParams);
 
     // Initializes the rendering with `SimpleRunnerParams`.
     // This will initialize the platform backend (SDL, Glfw, etc.) and the rendering backend (OpenGL, Vulkan, etc.).
@@ -144,11 +145,12 @@ namespace ManualRender
     // This will initialize the platform backend (SDL, Glfw, etc.) and the rendering backend (OpenGL, Vulkan, etc.).
     void SetupFromGuiFunction(
         const VoidFunction& guiFunction,
-                              const std::string& windowTitle = "",
-                              bool windowSizeAuto = false,
-                              bool windowRestorePreviousGeometry = false,
-                              const ScreenSize& windowSize = DefaultWindowSize,
-        float fpsIdle = 10.f
+        const std::string& windowTitle = "",
+        bool windowSizeAuto = false,
+        bool windowRestorePreviousGeometry = false,
+        const ScreenSize& windowSize = DefaultWindowSize,
+        float fpsIdle = 10.f,
+        bool topMost = false
     );
 
     // Renders the current frame. Should be called regularly to maintain the application's responsiveness.

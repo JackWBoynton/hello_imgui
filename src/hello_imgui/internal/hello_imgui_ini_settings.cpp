@@ -362,7 +362,7 @@ namespace HelloImGui
             }
         }
 
-        void SaveDockableWindowsVisibility(const std::string& iniPartsFilename,
+        void SaveDockableWindowsVisibility(const std::optional<std::string>& iniPartsFilename,
                                         const DockingParams& dockingParams)
         {
             return;
@@ -397,7 +397,7 @@ namespace HelloImGui
             }
         }
 
-        void LoadDockableWindowsVisibility(const std::string& iniPartsFilename, DockingParams* inOutDockingParams)
+        void LoadDockableWindowsVisibility(const std::optional<std::string>& iniPartsFilename, DockingParams* inOutDockingParams)
         {
             return;
             std::string iniPartName =

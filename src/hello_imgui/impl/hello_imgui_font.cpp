@@ -110,9 +110,8 @@ namespace HelloImGui
         if (params.insideAssets)
         {
             AssetFileData fontData = LoadAssetFileData(fontFilename.c_str());
-            params.fontConfig.FontDataOwnedByAtlas = false;
+            params.fontConfig.FontDataOwnedByAtlas = true;
             font = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(fontData.data, (int)fontData.dataSize, fontSize, &params.fontConfig);
-            FreeAssetFileData(&fontData);
         }
         else
         {
@@ -145,12 +144,19 @@ namespace HelloImGui
         fontLoadingParams.fontConfig = configFont;
         ImFont* font = LoadFont(fontFilename, fontSize, fontLoadingParams);
 
-        // Add FontAwesome4 icons
+        // Add FontAwesome icons
         {
-            static std::string faFile = "fonts/fontawesome-webfont.ttf";
+            std::string iconFontFile = "fonts/fontawesome-webfont.ttf";
+            if (HelloImGui::IsUsingHelloImGui())
+            {
+                auto defaultIconFont = HelloImGui::GetRunnerParams()->callbacks.defaultIconFont;
+                if (defaultIconFont == HelloImGui::DefaultIconFont::FontAwesome6)
+                    iconFontFile = "fonts/Font_Awesome_6_Free-Solid-900.otf";
+            }
+
             FontLoadingParams fontLoadingParamsFa;
             fontLoadingParamsFa.mergeToLastFont = true;
-            font = LoadFont(faFile, fontSize, fontLoadingParamsFa);
+            font = LoadFont(iconFontFile, fontSize, fontLoadingParamsFa);
         }
 
         return font;

@@ -28,6 +28,8 @@
 #include <filesystem>
 #include <cstdio>
 #include <optional>
+#include <thread>
+#include <chrono>
 
 #if __APPLE__
 #include <TargetConditionals.h>
@@ -100,6 +102,7 @@ struct AbstractRunnerStatics
     std::string lastLoadedLayout;
     bool isFirstLayoutSwitch = true;
     bool lastHiddenState = false;
+    bool lastTopMostState = false;
     double timeLastEvent = -1.;
     double lastRefreshTime = 0.;
 };
@@ -472,12 +475,6 @@ void AbstractRunner::CheckPrefs()
 #endif
     }
 
-    #ifndef IMGUI_BUNDLE_PYTHON_API
-        ImGui::GetIO().IniFilename = NULL;
-    #else
-        ImGui::GetIO().IniFilename = "";
-    #endif
-
 #ifndef HELLOIMGUI_WITH_TEST_ENGINE
     if (params.useImGuiTestEngine)
     {
@@ -620,6 +617,12 @@ void AbstractRunner::Setup()
     InitRenderBackendCallbacks();
 
     InitImGuiContext();
+
+    // Ini file handling
+    ImGui::GetIO().IniFilename = nullptr; // We handle ini file loading/saving ourselves (see calls to ImGui::LoadIniSettingsFromMemory)
+    if (params.iniClearPreviousSettings)
+        HelloImGui::DeleteIniSettings(params);
+
     CheckPrefs();
 
     // Init platform backend (SDL, Glfw)
@@ -652,6 +655,7 @@ void AbstractRunner::Setup()
         {
             Impl_CreateGlContext();
             Impl_InitGlLoader();
+            ApplyVsyncToMonitor_Cached();
         }
     #endif
 
@@ -774,6 +778,9 @@ void AbstractRunner::RenderGui()
         {
             ImGui::EndGroup();
             ImVec2 userWidgetsSize = ImGui::GetItemRectSize();
+            auto windowPadding = ImGui::GetStyle().WindowPadding;
+            userWidgetsSize.x += ImGui::GetStyle().WindowPadding.x * 2;
+            userWidgetsSize.y += ImGui::GetStyle().WindowPadding.y * 2;
             mGeometryHelper->TrySetWindowSize(
                 mBackendWindowHelper.get(), mWindow, userWidgetsSize,
                 this->setWasWindowResizedByCodeDuringThisFrame);
@@ -923,8 +930,18 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
             if (params.appWindowParams.hidden)
                 mBackendWindowHelper->HideWindow(mWindow);
             else
-                mBackendWindowHelper->ShowWindow(mWindow);
+            {
+                mBackendWindowHelper->RaiseWindow(mWindow);
+                //mBackendWindowHelper->ShowWindow(mWindow);
+            }
             gStatics.lastHiddenState = params.appWindowParams.hidden;
+
+            // Set initial topMost state (ignore if fullscreen)
+            if (params.appWindowParams.windowGeometry.fullScreenMode == FullScreenMode::NoFullScreen)
+            {
+                mBackendWindowHelper->SetWindowTopMost(mWindow, params.appWindowParams.topMost);
+                gStatics.lastTopMostState = params.appWindowParams.topMost;
+            }
         }
         // On subsequent frames, we take into account user modifications of appWindowParams.hidden
         if (mIdxFrame > 3)
@@ -936,6 +953,16 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
                     mBackendWindowHelper->HideWindow(mWindow);
                 else
                     mBackendWindowHelper->ShowWindow(mWindow);
+            }
+
+            // Handle dynamic topMost changes (ignore if fullscreen)
+            if (params.appWindowParams.windowGeometry.fullScreenMode == FullScreenMode::NoFullScreen)
+            {
+                if (params.appWindowParams.topMost != gStatics.lastTopMostState)
+                {
+                    gStatics.lastTopMostState = params.appWindowParams.topMost;
+                    mBackendWindowHelper->SetWindowTopMost(mWindow, params.appWindowParams.topMost);
+                }
             }
         }
 
@@ -951,17 +978,19 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
 
 
     //
-    //  Ilding and Poll logic
-    //
+    // Idling
+    // We handle two forms of idling:
+    //    - Inactive idling: when no recent event was received (prefix "fnInactiveIdling_")
+    //    - Max fps idling: to limit the maximum fps (prefix "fnMaxFpsIdling_")
+
 
     // Returns true if we can idle on this frame, i.e.:
     //  - idling is enabled
     // - no recent event was received, and the app is not in the first frames
     // - no test running
     // - not in remote display mode
-    auto fnCanIdle = [this]() -> bool
+    auto fnInactiveIdling_IsInactive = [this](double now) -> bool
     {
-        double now = Internal::ClockSeconds();
         assert(params.fpsIdling.fpsIdle >= 0.f && "fpsIdle must be >= 0");
 
         // If the last event is recent, do not idle
@@ -987,7 +1016,7 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
 
 
     // Handle idling by sleeping (all platforms except emscripten)
-    auto fnIdleBySleeping = [this]()
+    auto fnInactiveIdling_Sleep = [this]()
     {
         // Idling for non emscripten, where HelloImGui is responsible for the main loop.
         // This form of idling will call WaitForEventTimeout(), which may call sleep():
@@ -995,24 +1024,46 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
         mBackendWindowHelper->WaitForEventTimeout(waitTimeout);
     };
 
-
-    auto fnWasLastFrameRenderedInTimeForDesiredFps = [this]() -> bool
+    auto fnInactiveIdling_WasLastFrameRenderedInTimeForDesiredFps = [this](double now) -> bool
     {
-        double now = Internal::ClockSeconds();
         bool wasLastFrameRenderedInTimeForDesiredFps = ((now - gStatics.lastRefreshTime) < 1. / params.fpsIdling.fpsIdle);
         return wasLastFrameRenderedInTimeForDesiredFps;
     };
 
-    // Handles idling, and returns true if we should skip rendering this frame
-    // (Idling is handled by sleeping on all platforms except emscripten, where we skip rendering)
-    auto fnHandleIdling = [this, fnCanIdle, fnIdleBySleeping, fnWasLastFrameRenderedInTimeForDesiredFps]() -> bool
+    auto fnMaxFpsIdling_SleepDurationNeeded = [this](double now) -> double
     {
-        bool shallIdle = fnCanIdle();
-        params.fpsIdling.isIdling = shallIdle;
-        if (shallIdle)
-        {
-            bool idleByEarlyReturn = false;
+        float fpsMax = params.fpsIdling.fpsMax;
+        if (fpsMax <= 0.f)
+            return 0.;  // no max fps, always refresh
 
+        double dt = now - gStatics.lastRefreshTime;
+        double min_dt = 1.0 / fpsMax;
+        double sleepDurationNeeded = (dt >= min_dt) ? 0. : (min_dt - dt);
+        // printf("idxFrame=%d, now=%f, lastRefresh=%f, dt=%f, min_dt=%f, sleepDurationNeeded=%f, FrameRate=%f, DeltaTime=%f\n",
+        //        mIdxFrame, now, gStatics.lastRefreshTime, dt, min_dt, sleepDurationNeeded, ImGui::GetIO().Framerate, ImGui::GetIO().DeltaTime);
+
+        if (sleepDurationNeeded <= 0.0005) // 0.5 ms: don't bother sleeping for very small durations
+            sleepDurationNeeded = 0.;
+
+        return sleepDurationNeeded;
+    };
+
+    // Handles idling, and returns true if we should skip rendering this frame
+    // (Idling is handled by sleeping or by early return, depending on params)
+    // We handle two forms of idling:
+    //    - Inactive idling: when no recent event was received (prefix "fnInactiveIdling_")
+    //    - Max fps idling: to limit the maximum fps (prefix "fnMaxFpsIdling_")
+    auto fnHandleIdling = [this,
+        fnInactiveIdling_IsInactive, fnInactiveIdling_Sleep,
+        fnInactiveIdling_WasLastFrameRenderedInTimeForDesiredFps,
+        fnMaxFpsIdling_SleepDurationNeeded]() -> bool
+    {
+        bool shallSkipRenderingThisFrame = false;  // will be the return value
+        double now = Internal::ClockSeconds();
+
+        // Which strategy shall we apply
+        bool idleByEarlyReturn = false;
+        {
             if (params.fpsIdling.fpsIdlingMode == FpsIdlingMode::EarlyReturn)
                 idleByEarlyReturn = true;
 
@@ -1021,23 +1072,50 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
                 // Under emscripten, the idling implementation is different:
                 // we cannot sleep (which would lead to a busy wait), so we skip rendering
                 // if the last frame was rendered in time for the desired FPS
-                #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
                 idleByEarlyReturn = true;
-                #endif
+#endif
             }
+        }
 
+        //
+        // InactiveIdling: Handle idling when no recent event was received
+        //
+        bool shallIdleDuringInactivity = fnInactiveIdling_IsInactive(now);
+        params.fpsIdling.isIdling = shallIdleDuringInactivity;
+        if (shallIdleDuringInactivity)
+        {
             if (idleByEarlyReturn)
             {
-                if (fnWasLastFrameRenderedInTimeForDesiredFps())
-                    return true;
+                if (fnInactiveIdling_WasLastFrameRenderedInTimeForDesiredFps(now))
+                    shallSkipRenderingThisFrame = true;
             }
             else
             {
                 // Handle idling by sleeping (all platforms except emscripten)
-                fnIdleBySleeping();
+                fnInactiveIdling_Sleep();
             }
         }
-        return false;
+
+        //
+        // MaxFps Idling
+        //
+        double maxFps_SleepDurationNeeded = fnMaxFpsIdling_SleepDurationNeeded(now);
+        if (maxFps_SleepDurationNeeded > 0.)
+        {
+            if (idleByEarlyReturn)
+                shallSkipRenderingThisFrame = true;
+            else
+                std::this_thread::sleep_for(std::chrono::duration<double>(maxFps_SleepDurationNeeded));
+        }
+
+        if ( !shallSkipRenderingThisFrame)
+        {
+            now = Internal::ClockSeconds();
+            gStatics.lastRefreshTime = now;
+        }
+
+        return shallSkipRenderingThisFrame;
     };
 
     // Handle poll events
@@ -1149,6 +1227,7 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
         if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
             Impl_UpdateAndRenderAdditionalPlatformWindows();
 
+        ApplyVsyncToMonitor_Cached();
         Impl_SwapBuffers();
 
         mRemoteDisplayHandler.Heartbeat_PostImGuiRender();
@@ -1254,9 +1333,6 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
         fnHandleWindowSizeAndPositionOnFirstFrames_AndAfterResize();
     }
 
-    // nbEventsBeforePollAndIdle enables us to detect if an event was received
-    int nbEventsBeforePollAndIdle = ImGui::GetCurrentContext()->InputEventsQueue.size();
-
     // Handle idling: this will either sleep (almost all platforms) or skip rendering (emscripten)
     {
         SCOPED_RELEASE_GIL_ON_MAIN_THREAD;
@@ -1277,7 +1353,7 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
 
     // Detect if an event was received, and store the time of the last event
     {
-        if (ImGui::GetCurrentContext()->InputEventsQueue.size() > nbEventsBeforePollAndIdle)
+        if (ImGui::GetCurrentContext()->InputEventsQueue.size() > 0)
             gStatics.timeLastEvent = Internal::ClockSeconds();
     }
 
@@ -1302,6 +1378,9 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
     // ImGui::NewFrame may call ImGuiTestEngine_PostNewFrame, which in turn handles the GIL in its own way,
     // so that it can *NOT* be called inside SCOPED_RELEASE_GIL_ON_MAIN_THREAD
     ImGui::NewFrame();
+
+    if ((params.callbacks.PostNewFrame) && !insideReentrantCall)
+        params.callbacks.PostNewFrame();
 
     {
         fnCheckOpenGlErrorOnFirstFrame_WarnPotentialFontError(); // not in a SCOPED_RELEASE_GIL_ON_MAIN_THREAD, because it is very fast and rare
@@ -1337,8 +1416,6 @@ void AbstractRunner::CreateFramesAndRender(bool insideReentrantCall)
 
     if (!mRemoteDisplayHandler.CanQuitApp())
         params.appShallExit = false;
-
-    gStatics.lastRefreshTime = Internal::ClockSeconds();
 
     mIdxFrame += 1;
 }
@@ -1434,6 +1511,16 @@ bool AbstractRunner::ShouldRemoteDisplay()
     return mRemoteDisplayHandler.ShouldRemoteDisplay();
 }
 
+void AbstractRunner::ApplyVsyncToMonitor_Cached()
+{
+    bool desired = params.fpsIdling.vsyncToMonitor;
+
+    if (mApplyVsyncToMonitor_LastValue != desired)
+    {
+        mApplyVsyncToMonitor_LastValue = desired;
+        Impl_ApplyVsyncSetting();
+    }
+}
 
 
 }  // namespace HelloImGui

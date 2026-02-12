@@ -8,6 +8,8 @@
 #include "hello_imgui/renderer_backend_options.h"
 #include "hello_imgui/dpi_aware.h"
 #include <vector>
+#include <string>
+#include <optional>
 
 namespace HelloImGui
 {
@@ -43,6 +45,9 @@ enum class RendererBackendType
 };
 
 // @@md
+
+std::string PlatformBackendTypeToString(PlatformBackendType platformBackendType);
+std::string RendererBackendTypeToString(RendererBackendType rendererBackendType);
 
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -106,15 +111,26 @@ std::string IniFolderLocation(IniFolderType iniFolderType);
 
 // @@md#FpsIdling
 
-// FpsIdlingMode is an enum that describes the different modes of idling when rendering the GUI.
-// - Sleep: the application will sleep when idling to reduce CPU usage.
-// - EarlyReturn: rendering will return immediately when idling.
-//   This is specifically designed for event-driven, and real-time applications.
-//   Avoid using it in a tight loop without pauses, as it may cause excessive CPU consumption.
-// - Auto: use platform-specific default behavior.
-//    On most platforms, it will sleep. On Emscripten, `Render()` will return immediately
-//    to avoid blocking the main thread.
-// Note: you can override the default behavior by explicitly setting Sleep or EarlyReturn.
+// FpsIdlingMode is an enum that describes the different modes of idling
+// when rendering the GUI.
+//
+// - Sleep:
+//     The application sleeps when idling in order to reduce CPU usage.
+//
+// - EarlyReturn:
+//     Rendering returns immediately when idling.
+//     This is designed for event-driven or real-time applications,
+//     including Jupyter/async usage and web applications.
+//     Avoid using EarlyReturn inside a tight CPU loop without pauses,
+//     as it may cause excessive CPU consumption.
+//
+// - Auto:
+//     Use platform-specific default behavior.
+//     On most native platforms, it will sleep.
+//     On Emscripten, Render() will always return immediately
+//     to avoid blocking the main browser thread.
+//
+// Note: you can override the default behavior by explicitly choosing Sleep or EarlyReturn.
 enum class FpsIdlingMode
 {
     Sleep,
@@ -122,44 +138,100 @@ enum class FpsIdlingMode
     Auto,
 };
 
-// FpsIdling is a struct that contains Fps Idling parameters
+
+// FpsIdling is a struct that contains parameters controlling the application's
+// frame pacing, idling behavior, and performance.
+//
+// It provides tools to:
+//   - lower CPU/GPU usage during inactivity,
+//   - control maximum refresh speed,
+//   - enable/disable synchronization to the monitor refresh rate,
+//   - adapt frame pacing for special environments (notebooks, web, etc.).
 struct FpsIdling
 {
-    // `fpsIdle`: _float, default=9_.
-    //  ImGui applications can consume a lot of CPU, since they update the screen
-    //  very frequently. In order to reduce the CPU usage, the FPS is reduced when
-    //  no user interaction is detected.
-    //  This is ok most of the time but if you are displaying animated widgets
-    //  (for example a live video), you may want to ask for a faster refresh:
-    //  either increase fpsIdle, or set it to 0 for maximum refresh speed
-    //  (you can change this value during the execution depending on your application
-    //  refresh needs)
+    // `fpsIdle`: _float, default = 9_.
+    //
+    // When the application is idling (no user interaction detected), its FPS
+    // will be reduced to this value in order to save CPU and GPU resources.
+    //
+    // For animated or real-time widgets (e.g., live video), you may need a
+    // higher idle refresh rate, or even disable idling entirely.
+    //
+    // Set fpsIdle = 0.f for maximum refresh speed during idling.
     float fpsIdle = 9.f;
 
-    // `timeActiveAfterLastEvent`: _float, default=3.f_.
-    //  Time in seconds after the last event before the application is considered idling.
+
+    // `timeActiveAfterLastEvent`: _float, default = 3.f_.
+    //
+    // The duration (in seconds) after the last user event before the
+    // application switches to idling mode.
     float timeActiveAfterLastEvent = 3.f;
 
-    // `enableIdling`: _bool, default=true_.
-    //  Disable idling by setting this to false.
-    //  (this can be changed dynamically during execution)
-    bool  enableIdling = true;
 
-    // `isIdling`: bool (dynamically updated during execution)
-    //  This bool will be updated during the application execution,
-    //  and will be set to true when it is idling.
-    bool  isIdling = false;
+    // `enableIdling`: _bool, default = true_.
+    //
+    // Enables or disables idling. When disabled, the application renders at
+    // full speed regardless of user activity.
+    //
+    // This can be changed dynamically during execution.
+    bool enableIdling = true;
 
-    // `rememberEnableIdling`: _bool, default=true_.
-    //  If true, the last value of enableIdling is restored from the settings at startup.
-    bool  rememberEnableIdling = false;
 
-    // `fpsIdlingMode`: _FpsIdlingMode, default=FpsIdlingMode::Automatic_.
-    // Sets the mode of idling when rendering the GUI (Sleep, EarlyReturn, Automatic)
+    // `isIdling`: _bool (updated dynamically)_.
+    //
+    // This boolean is updated internally at runtime, and becomes true when
+    // the application is considered idle.
+    bool isIdling = false;
+
+
+    // `rememberEnableIdling`: _bool, default = false.
+    //
+    // If true, the value of enableIdling will be restored from previous
+    // saved settings on startup.
+    bool rememberEnableIdling = false;
+
+
+    // `fpsIdlingMode`: _FpsIdlingMode, default = FpsIdlingMode::Auto_.
+    //
+    // Controls how idling is implemented internally:
+    //   - Sleep: sleep while idling (minimizes CPU usage)
+    //   - EarlyReturn: return immediately when idling (best for notebooks and async use)
+    //   - Auto: platform-specific behavior
     FpsIdlingMode fpsIdlingMode = FpsIdlingMode::Auto;
+
+
+    // `vsyncToMonitor`: _bool, default = true_.
+    //
+    // If true, rendering is synchronized with the monitor refresh rate (commonly
+    // known as *VSync*). This limits the frame rate to the display frequency
+    // (e.g., 60 Hz, 120 Hz) and prevents unnecessary CPU/GPU load.
+    // *Only implemented with OpenGL*
+    //
+    // If false, rendering runs as fast as possible, or is limited by `fpsMax`.
+    // This is useful for benchmarking, offscreen rendering, or Jupyter/async workflows.
+    //
+    // Internally, this maps to the backend swap interval (e.g. glfwSwapInterval).
+    bool vsyncToMonitor = true;
+
+
+    // `fpsMax`: _float, default = 0.f_ (unlimited).
+    //
+    // Sets an explicit upper limit on the frame rate when not idling.
+    //
+    // This is particularly useful when:
+    //   - vsyncToMonitor is false,
+    //   - you want to avoid >1000 FPS rendering loops,
+    //   - preventing excessive CPU/GPU usage on high-performance machines,
+    //   - ensuring fairness in cooperative async environments.
+    //
+    // If fpsMax > 0, the application ensures that each frame takes at least
+    // (1 / fpsMax) seconds to render.
+    //
+    // When both vsyncToMonitor and fpsMax are enabled:
+    //   - The lower (stricter) limit dominates.
+    float fpsMax = 0.f;
 };
 // @@md
-
 
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -248,6 +320,12 @@ struct RunnerParams
     // `iniFilename_useAppWindowTitle`: _bool, default = true_.
     // Shall the iniFilename be derived from appWindowParams.windowTitle (if not empty)
     bool iniFilename_useAppWindowTitle = true;
+    // `iniDisable`: _bool, default = false_.
+    // If true, do not save or load any settings to or from an ini file.
+    bool iniDisable = false;
+    // `iniClearPreviousSettings`: _bool, default = false_.
+    // If true, delete any previous settings ini file at application startup.
+    bool iniClearPreviousSettings = false;
 
 
     // --------------- Exit -------------------
@@ -298,7 +376,7 @@ struct RunnerParams
 // @@md#IniIniSettingsLocation
 
 // IniSettingsLocation returns the path to the ini file for the application settings.
-std::string IniSettingsLocation(const RunnerParams& runnerParams);
+std::optional<std::string> IniSettingsLocation(const RunnerParams& runnerParams);
 
 // HasIniSettings returns true if the ini file for the application settings exists.
 bool HasIniSettings(const RunnerParams& runnerParams);
@@ -360,6 +438,11 @@ struct SimpleRunnerParams
     //  When running, use:
     //      HelloImGui::GetRunnerParams()->fpsIdling.enableIdling = false;
     bool  enableIdling = true;
+
+    // `topMost`: _bool, default=false_.
+    //  If true, the window will stay on top of other windows (desktop platforms only).
+    //  Useful especially when running from notebooks to keep the app visible above the browser.
+    bool topMost = false;
 
     RunnerParams ToRunnerParams() const;
 };

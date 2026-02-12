@@ -8,6 +8,13 @@
 
 #include <unordered_map>
 
+#ifdef IMGUI_BUNDLE_PYTHON_UNSUPPORTED_API
+#define INSIDE_IMGUI_BUNDLE
+#endif
+#ifdef INSIDE_IMGUI_BUNDLE
+bool Priv_ImGuiNodeEditor_IsInCanvas();  // From imgui.cpp, within the imgui_bundle branch
+#endif
+
 
 namespace HelloImGui
 {

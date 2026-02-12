@@ -227,6 +227,10 @@ struct RunnerCallbacks
     //  It is a good place to add new dockable windows.
     VoidFunction PreNewFrame = EmptyVoidFunction();
 
+    // `PostNewFrame`: You can here add a function that will be called at each frame,
+    //  just after the call to ImGui::NewFrame(), and before any Gui code.
+    VoidFunction PostNewFrame = EmptyVoidFunction();
+
     // `BeforeImGuiRender`: You can here add a function that will be called at each frame,
     //  after the user Gui code, and just before the call to
     //  ImGui::Render() (which will also call ImGui::EndFrame()).
@@ -247,6 +251,13 @@ struct RunnerCallbacks
     // `PostRenderDockableWindows`: Fill it with a function that will be called
     // after the dockable windows are rendered.
     VoidFunction PostRenderDockableWindows = EmptyVoidFunction();
+
+    // `ThemeChanged`: You can here add a function that will be called
+    //  immediately after `ImGuiTheme::ApplyTheme` has been executed. This is
+    //  typically triggered when the user clicks a theme menu item in the menubar,
+    //  allowing custom drawings or UI elements to update their colors right after
+    //  the theme change.
+    VoidFunction ThemeChanged = EmptyVoidFunction();
 
     // `AnyBackendEventCallback`:
     //  Callbacks for events from a specific backend. _Only implemented for SDL.
