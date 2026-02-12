@@ -351,7 +351,7 @@ namespace HelloImGui
             for (const auto& dockableWindow: dockingParams.dockableWindows)
             {
                 if (
-                std::find(windowsWithSettings.begin(), windowsWithSettings.end(), dockableWindow.label)
+                std::find(windowsWithSettings.begin(), windowsWithSettings.end(), dockableWindow->label)
                 == windowsWithSettings.end())
                 {
                     return false;
@@ -371,10 +371,10 @@ namespace HelloImGui
             ini::IniFile iniFile;
             for (const auto& dockableWindow: dockingParams.dockableWindows)
             {
-                if (dockableWindow.rememberIsVisible)
+                if (dockableWindow->rememberIsVisible)
                 {
-                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow.label);
-                    iniFile["Visibility"][iniValueName] = dockableWindow.isVisible;
+                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow->label);
+                    iniFile["Visibility"][iniValueName] = dockableWindow->isVisible;
                 }
             }
 
@@ -398,15 +398,15 @@ namespace HelloImGui
             iniFile.decode(iniParts.GetIniPart(iniPartName));
             for (auto& dockableWindow: inOutDockingParams->dockableWindows)
             {
-                if (dockableWindow.rememberIsVisible)
+                if (dockableWindow->rememberIsVisible)
                 {
-                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow.label);
+                    std::string iniValueName = details::SanitizeIniNameOrCategory(dockableWindow->label);
                     std::string boolString = iniFile["Visibility"][iniValueName].as<std::string>();
 
                     if (boolString == "true")
-                        dockableWindow.isVisible = true;
+                        dockableWindow->isVisible = true;
                     if (boolString == "false")
-                        dockableWindow.isVisible = false;
+                        dockableWindow->isVisible = false;
                 }
             }
         }
