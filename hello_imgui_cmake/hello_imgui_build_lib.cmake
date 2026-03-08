@@ -671,7 +671,7 @@ function(_him_add_freetype_plutosvg_to_imgui)
 
     # Option 0: use existing plutosvg target if available
     if (TARGET plutosvg)
-        target_link_libraries(imgui PUBLIC plutosvg)
+        target_link_libraries(imgui PUBLIC $<BUILD_INTERFACE:plutosvg>)
         target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG)
         set(HELLOIMGUI_FREETYPE_SELECTED_INFO "${HELLOIMGUI_FREETYPE_SELECTED_INFO} - use existing plutosvg target" CACHE INTERNAL "" FORCE)
         return()
