@@ -670,9 +670,11 @@ function(_him_add_freetype_plutosvg_to_imgui)
     # - add plutosvg + plutovg to imgui
 
     # Option 0: use existing plutosvg target if available
+    find_package(plutosvg QUIET)
     if (TARGET plutosvg::plutosvg AND NOT TARGET plutosvg)
         add_library(plutosvg ALIAS plutosvg::plutosvg)
     endif()
+
     if (TARGET plutosvg)
         target_link_libraries(imgui PUBLIC $<BUILD_INTERFACE:plutosvg>)
         target_compile_definitions(imgui PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG)
