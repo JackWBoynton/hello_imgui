@@ -1232,9 +1232,9 @@ function(him_use_glfw3_backend target)
     if (EMSCRIPTEN)
         # Use pongasoft/emscripten-glfw contrib port of glfw3 for emscripten
         # cf https://github.com/pongasoft/emscripten-glfw
-        message(STATUS "HelloImGui: using pongasoft/emscripten-glfw (--use-port=contrib.glfw3)")
-        target_compile_options(${HELLOIMGUI_TARGET} PUBLIC --use-port=contrib.glfw3)
-        target_link_options(${HELLOIMGUI_TARGET} PUBLIC --use-port=contrib.glfw3)
+        message(STATUS "HelloImGui: using emscripten built-in GLFW (-sUSE_GLFW=3)")
+        target_compile_options(${HELLOIMGUI_TARGET} PUBLIC -sUSE_GLFW=3)
+        target_link_options(${HELLOIMGUI_TARGET} PUBLIC -sUSE_GLFW=3)
     else()
         _him_fetch_glfw_if_needed()
         if (NOT TARGET glfw) # if glfw is not built as part of the whole build, find it
