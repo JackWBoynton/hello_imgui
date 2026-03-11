@@ -43,7 +43,7 @@ namespace HelloImGui
         // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         // SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
         // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
