@@ -439,8 +439,7 @@ if(HELLOIMGUI_INSTALL)
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
-        INCLUDES DESTINATION include
-        COMPONENT Development)
+        INCLUDES DESTINATION include)
 
     install(EXPORT hello-imgui-targets
         FILE hello-imgui-targets.cmake
