@@ -1,5 +1,6 @@
 include(CMakeFindDependencyMacro)
-find_dependency(imgui CONFIG REQUIRED)
+# imgui, implot, imguizmo are bundled — exported as hello-imgui::imgui etc.
+# Only look for external deps that were found via find_package during the build.
 find_dependency(plutosvg CONFIG QUIET)
 
 # Compute the installation prefix from the location of this file.
