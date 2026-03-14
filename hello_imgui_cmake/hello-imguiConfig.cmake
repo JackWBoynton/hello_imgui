@@ -4,7 +4,7 @@ include(CMakeFindDependencyMacro)
 find_dependency(plutosvg CONFIG QUIET)
 
 # Compute the installation prefix from the location of this file.
-# Assuming the config file is at: <prefix>/lib/cmake/hello_imgui/hello-imguiConfig.cmake
+# Assuming the config file is at: <prefix>/lib/cmake/hello-imgui/hello-imguiConfig.cmake
 get_filename_component(HELLO_IMGUI_PREFIX "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
 set(HELLO_IMGUI_SHARE_DIR "${HELLO_IMGUI_PREFIX}/share/hello-imgui")
 
