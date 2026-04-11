@@ -895,6 +895,8 @@ endfunction()
 function(him_add_windows_options)
     _him_msvc_group_sources()
     _him_win_add_auto_win_main()
+    # dwmapi is needed for DwmSetWindowAttribute (dark mode, Mica backdrop, custom frame)
+    target_link_libraries(${HELLOIMGUI_TARGET} PUBLIC dwmapi)
 endfunction()
 
 function(_him_msvc_group_sources)

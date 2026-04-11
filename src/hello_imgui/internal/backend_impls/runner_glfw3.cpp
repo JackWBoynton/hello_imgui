@@ -31,6 +31,129 @@
 #include "imgui_impl_glfw.h"
 #include <imgui.h>
 
+#ifdef _WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include <dwmapi.h>
+#include <windowsx.h>
+
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+#ifndef DWMWA_SYSTEMBACKDROP_TYPE
+#define DWMWA_SYSTEMBACKDROP_TYPE 38
+#endif
+
+namespace HelloImGui { namespace WindowsCustomFrame {
+
+    // Stored options for the WndProc to reference
+    static float sTitleBarHeight = 0.f;
+    static WNDPROC sOriginalWndProc = nullptr;
+
+    static int GetResizeBorderWidth() {
+        return GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER);
+    }
+
+    static LRESULT CALLBACK CustomWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+        // Let DWM handle its messages first (shadow, etc.)
+        LRESULT dwmResult = 0;
+        if (DwmDefWindowProc(hWnd, msg, wParam, lParam, &dwmResult))
+            return dwmResult;
+
+        switch (msg) {
+        case WM_ACTIVATE: {
+            MARGINS margins = {0, 0, 1, 0};
+            DwmExtendFrameIntoClientArea(hWnd, &margins);
+            return 0;
+        }
+
+        case WM_NCCALCSIZE: {
+            if (wParam == TRUE) {
+                // Return 0 to remove the standard non-client frame.
+                // When maximized, compensate so the window doesn't cover the taskbar.
+                auto* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lParam);
+                if (IsZoomed(hWnd)) {
+                    HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+                    MONITORINFO mi = {sizeof(mi)};
+                    if (GetMonitorInfoW(monitor, &mi))
+                        params->rgrc[0] = mi.rcWork;
+                }
+                return 0;
+            }
+            break;
+        }
+
+        case WM_NCHITTEST: {
+            POINT pt = {GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+            RECT rc;
+            GetWindowRect(hWnd, &rc);
+
+            const int border = GetResizeBorderWidth();
+            const int titlebar = static_cast<int>(sTitleBarHeight);
+            const bool maximized = IsZoomed(hWnd);
+
+            // Resize borders (disabled when maximized)
+            if (!maximized) {
+                if (pt.y >= rc.top && pt.y < rc.top + border) {
+                    if (pt.x < rc.left + border) return HTTOPLEFT;
+                    if (pt.x >= rc.right - border) return HTTOPRIGHT;
+                    return HTTOP;
+                }
+                if (pt.y >= rc.bottom - border) {
+                    if (pt.x < rc.left + border) return HTBOTTOMLEFT;
+                    if (pt.x >= rc.right - border) return HTBOTTOMRIGHT;
+                    return HTBOTTOM;
+                }
+                if (pt.x >= rc.left && pt.x < rc.left + border) return HTLEFT;
+                if (pt.x >= rc.right - border) return HTRIGHT;
+            }
+
+            // Titlebar area: drag-to-move (skip the right ~138px for caption buttons)
+            if (titlebar > 0 && pt.y < rc.top + titlebar) {
+                if (pt.x >= rc.right - 138)
+                    return HTCLIENT;  // Caption buttons zone — let ImGui handle
+                return HTCAPTION;
+            }
+
+            return HTCLIENT;
+        }
+
+        case WM_GETMINMAXINFO: {
+            auto* mmi = reinterpret_cast<MINMAXINFO*>(lParam);
+            HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+            MONITORINFO mi = {sizeof(mi)};
+            if (GetMonitorInfoW(monitor, &mi)) {
+                mmi->ptMaxPosition.x = mi.rcWork.left - mi.rcMonitor.left;
+                mmi->ptMaxPosition.y = mi.rcWork.top - mi.rcMonitor.top;
+                mmi->ptMaxSize.x = mi.rcWork.right - mi.rcWork.left;
+                mmi->ptMaxSize.y = mi.rcWork.bottom - mi.rcWork.top;
+            }
+            return 0;
+        }
+        }
+
+        return CallWindowProcW(sOriginalWndProc, hWnd, msg, wParam, lParam);
+    }
+
+    static void Install(HWND hWnd, float titleBarHeight) {
+        sTitleBarHeight = titleBarHeight;
+        sOriginalWndProc = reinterpret_cast<WNDPROC>(
+            SetWindowLongPtrW(hWnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(CustomWndProc)));
+
+        // Extend DWM frame (1px top for shadow)
+        MARGINS margins = {0, 0, 1, 0};
+        DwmExtendFrameIntoClientArea(hWnd, &margins);
+
+        // Force a WM_NCCALCSIZE so the custom frame takes effect immediately
+        RECT rc;
+        GetWindowRect(hWnd, &rc);
+        SetWindowPos(hWnd, nullptr, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top,
+                     SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    }
+
+}} // namespace HelloImGui::WindowsCustomFrame
+#endif // _WIN32
+
 #include <thread>
 #include <cstdlib>
 //extern char **environ;
@@ -77,10 +200,6 @@ namespace HelloImGui
 #ifdef _WIN32
         // Apply Windows-specific DWM attributes after window creation
         {
-            #define GLFW_EXPOSE_NATIVE_WIN32
-            #include <GLFW/glfw3native.h>
-            #include <dwmapi.h>
-
             HWND hwnd = glfwGetWin32Window((GLFWwindow*)mWindow);
             if (hwnd)
             {
@@ -90,15 +209,24 @@ namespace HelloImGui
                 if (opts.nativeDarkMode)
                 {
                     BOOL useDark = TRUE;
-                    DwmSetWindowAttribute(hwnd, 20 /*DWMWA_USE_IMMERSIVE_DARK_MODE*/, &useDark, sizeof(useDark));
+                    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDark, sizeof(useDark));
                 }
 
                 // Mica backdrop (Win11 22621+, no-op on older Windows)
                 if (opts.enableVibrancy)
                 {
-                    // DWMWA_SYSTEMBACKDROP_TYPE = 38, DWM_SYSTEMBACKDROP_TYPE_MICA = 2
-                    int backdropType = 2;
-                    DwmSetWindowAttribute(hwnd, 38, &backdropType, sizeof(backdropType));
+                    int backdropType = 2;  // DWM_SYSTEMBACKDROP_TYPE_MICA
+                    DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
+
+                    // Extend frame into client area so the Mica backdrop is visible
+                    MARGINS margins = {-1, -1, -1, -1};
+                    DwmExtendFrameIntoClientArea(hwnd, &margins);
+                }
+
+                // Custom frameless window (remove standard caption, add resize/drag handling)
+                if (opts.customWindowFrame)
+                {
+                    WindowsCustomFrame::Install(hwnd, opts.titleBarHeight);
                 }
             }
         }

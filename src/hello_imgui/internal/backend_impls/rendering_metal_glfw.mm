@@ -70,6 +70,14 @@ namespace HelloImGui
                 nswin.appearance = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
             }
 
+            // --- Window background color (prevents flash during resize) ---
+            if (rendererBackendOptions.windowBackgroundColor[0] >= 0.f)
+            {
+                const float* c = rendererBackendOptions.windowBackgroundColor;
+                NSColor* bgColor = [NSColor colorWithRed:c[0] green:c[1] blue:c[2] alpha:c[3]];
+                [nswin setBackgroundColor:bgColor];
+            }
+
             // --- Metal layer setup ---
             gMetalGlobals.caMetalLayer = [CAMetalLayer layer];
             gMetalGlobals.caMetalLayer.device = gMetalGlobals.mtlDevice;

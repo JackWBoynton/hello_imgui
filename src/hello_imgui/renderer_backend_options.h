@@ -113,6 +113,25 @@ struct RendererBackendOptions
     // `vibrancyContentOpacity`: opacity of the rendering layer when vibrancy is enabled (0.0-1.0).
     //   Lower values let more of the vibrancy/desktop show through.
     float vibrancyContentOpacity = 0.85f;
+
+    // `customWindowFrame`: remove the standard OS window frame/caption bar.
+    //   Windows: subclasses the HWND to handle WM_NCCALCSIZE (frame removal),
+    //            WM_NCHITTEST (resize borders + titlebar drag), and WM_GETMINMAXINFO
+    //            (correct maximize behavior). Extends the DWM frame by 1px for shadow.
+    //   macOS/Linux: no effect (macOS uses transparentTitleBar instead)
+    bool customWindowFrame = false;
+
+    // `titleBarHeight`: height in pixels of the app-drawn titlebar region.
+    //   Only used when customWindowFrame is true. The region from the top of the window
+    //   to this height will return HTCAPTION for drag-to-move (unless it overlaps resize
+    //   borders or the caption button zone on the right).
+    float titleBarHeight = 0.f;
+
+    // `windowBackgroundColor`: optional background color for the OS window (RGBA, 0.0-1.0).
+    //   macOS: applied as nsWindow.backgroundColor to prevent flash during resize.
+    //   Windows/Linux: no effect.
+    //   Default {-1,-1,-1,-1} means "don't set" (leave OS default).
+    float windowBackgroundColor[4] = {-1.f, -1.f, -1.f, -1.f};
 };
 
 
