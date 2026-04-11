@@ -73,6 +73,36 @@ namespace HelloImGui
         backendOptions.rendererBackendType = params.rendererBackendType;
         mWindow = mBackendWindowHelper->CreateWindow(params.appWindowParams, backendOptions, renderCallbackDuringResize);
         params.backendPointers.glfwWindow = mWindow;
+
+#ifdef _WIN32
+        // Apply Windows-specific DWM attributes after window creation
+        {
+            #define GLFW_EXPOSE_NATIVE_WIN32
+            #include <GLFW/glfw3native.h>
+            #include <dwmapi.h>
+
+            HWND hwnd = glfwGetWin32Window((GLFWwindow*)mWindow);
+            if (hwnd)
+            {
+                const auto& opts = params.rendererBackendOptions;
+
+                // Dark mode titlebar
+                if (opts.nativeDarkMode)
+                {
+                    BOOL useDark = TRUE;
+                    DwmSetWindowAttribute(hwnd, 20 /*DWMWA_USE_IMMERSIVE_DARK_MODE*/, &useDark, sizeof(useDark));
+                }
+
+                // Mica backdrop (Win11 22621+, no-op on older Windows)
+                if (opts.enableVibrancy)
+                {
+                    // DWMWA_SYSTEMBACKDROP_TYPE = 38, DWM_SYSTEMBACKDROP_TYPE_MICA = 2
+                    int backdropType = 2;
+                    DwmSetWindowAttribute(hwnd, 38, &backdropType, sizeof(backdropType));
+                }
+            }
+        }
+#endif
     }
 
     void RunnerGlfw3::Impl_PollEvents()

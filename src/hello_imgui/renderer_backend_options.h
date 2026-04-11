@@ -90,6 +90,29 @@ struct RendererBackendOptions
     // `openGlOptions`:
     // Advanced options for OpenGL. Use at your own risk.
     OpenGlOptions openGlOptions;
+
+    // --- Platform window appearance options ---
+
+    // `nativeDarkMode`: sync the OS window chrome with dark/light mode.
+    //   macOS: sets NSAppearanceNameDarkAqua / NSAppearanceNameAqua
+    //   Windows: sets DWMWA_USE_IMMERSIVE_DARK_MODE on the HWND
+    //   Linux: no effect
+    bool nativeDarkMode = false;
+
+    // `transparentTitleBar`: use a transparent titlebar with full-size content view.
+    //   macOS only. Hides the title text and makes the titlebar blend with content.
+    bool transparentTitleBar = false;
+
+    // `enableVibrancy`: add a frosted-glass background behind the rendering surface.
+    //   macOS: inserts NSVisualEffectView behind the Metal layer
+    //   Windows: enables Mica/Acrylic backdrop via DWM (Win11+, falls back to no-op)
+    //   Linux: no effect
+    //   Note: for vibrancy to be visible, your ImGui background colors must have alpha < 1.0
+    bool enableVibrancy = false;
+
+    // `vibrancyContentOpacity`: opacity of the rendering layer when vibrancy is enabled (0.0-1.0).
+    //   Lower values let more of the vibrancy/desktop show through.
+    float vibrancyContentOpacity = 0.85f;
 };
 
 
